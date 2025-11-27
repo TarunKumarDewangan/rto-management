@@ -9,23 +9,24 @@ use Illuminate\Support\Facades\Hash;
 
 class AdminUserManagementController extends Controller
 {
-    // 1. Get All Users (excluding admins if you want)
-    public function index()
+    // Middleware should handle this, but explicit check is safer
+    private function checkAdmin($request)
     {
-        // Get all users who are NOT admins, ordered by latest
+        if ($request->user()->role !== 'admin')
+            abort(403, 'Unauthorized');
+    }
+
+    public function index(Request $request)
+    {
+        $this->checkAdmin($request);
         $users = User::where('role', 'user')->orderBy('created_at', 'desc')->get();
         return response()->json($users);
     }
 
-    // 2. Create User
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6',
-        ]);
-
+        $this->checkAdmin($request);
+        $request->validate(['name' => 'required', 'email' => 'required|email|unique:users', 'password' => 'required|min:6']);
         User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -33,49 +34,31 @@ class AdminUserManagementController extends Controller
             'role' => 'user',
             'is_active' => true
         ]);
-
-        return response()->json(['message' => 'User Created Successfully']);
+        return response()->json(['message' => 'User Created']);
     }
 
-    // 3. Update User
     public function update(Request $request, $id)
     {
+        $this->checkAdmin($request);
         $user = User::findOrFail($id);
-
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email,' . $id,
-        ]);
-
-        $user->name = $request->name;
-        $user->email = $request->email;
-
-        if ($request->has('password') && $request->password != '') {
-            $user->password = Hash::make($request->password);
-        }
-
-        $user->save();
-
-        return response()->json(['message' => 'User Updated Successfully']);
+        $user->update($request->only(['name', 'email']));
+        if ($request->password)
+            $user->update(['password' => Hash::make($request->password)]);
+        return response()->json(['message' => 'Updated']);
     }
 
-    // 4. Toggle Active/Deactive Status
-    public function toggleStatus($id)
+    public function toggleStatus(Request $request, $id)
     {
+        $this->checkAdmin($request);
         $user = User::findOrFail($id);
-        $user->is_active = !$user->is_active; // Switch status
-        $user->save();
-
-        return response()->json([
-            'message' => 'User status updated',
-            'is_active' => $user->is_active
-        ]);
+        $user->update(['is_active' => !$user->is_active]);
+        return response()->json(['message' => 'Status Updated']);
     }
 
-    // 5. Delete User
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $this->checkAdmin($request);
         User::destroy($id);
-        return response()->json(['message' => 'User Deleted Successfully']);
+        return response()->json(['message' => 'Deleted']);
     }
 }

@@ -6,24 +6,31 @@ use App\Models\Citizen;
 
 class AccountController extends Controller
 {
-    public function statement($citizenId)
+    public function statement(Request $request, $citizenId)
     {
         try {
-            // Eager load all nested relationships
-            $citizen = Citizen::with([
-                'vehicles.taxes.payments',
-                'vehicles.insurances.payments',
-                'vehicles.puccs.payments',
-                'vehicles.fitnesses.payments',
-                'vehicles.vltds.payments',
-                'vehicles.permits.payments',
-                'vehicles.speedGovernors.payments',
-            ])->findOrFail($citizenId);
+            // --- SECURITY FIX: Add ->where('user_id', ...) ---
+            $citizen = Citizen::where('id', $citizenId)
+                ->where('user_id', $request->user()->id) // <--- THIS LINE SECURES IT
+                ->with([
+                    'vehicles.taxes.payments',
+                    'vehicles.insurances.payments',
+                    'vehicles.puccs.payments',
+                    'vehicles.fitnesses.payments',
+                    'vehicles.vltds.payments',
+                    'vehicles.permits.payments',
+                    'vehicles.speedGovernors.payments',
+                ])->first(); // Changed findOrFail to first()
 
+            if (!$citizen) {
+                return response()->json(['message' => 'Unauthorized or Not Found'], 403);
+            }
+
+            // ... Rest of the code remains exactly the same ...
             $statement = [];
 
             foreach ($citizen->vehicles as $v) {
-
+                // (Keep the rest of your logic here...)
                 // Helper to format data rows
                 $addItem = function ($items, $serviceName, $dateField, $billField) use ($v, &$statement) {
                     if (!$items)
@@ -44,7 +51,6 @@ class AccountController extends Controller
                     }
                 };
 
-                // Add all sections
                 $addItem($v->taxes, 'Tax', 'upto_date', 'bill_amount');
                 $addItem($v->insurances, 'Insurance', 'end_date', 'bill_amount');
                 $addItem($v->puccs, 'PUCC', 'valid_until', 'bill_amount');
@@ -54,7 +60,6 @@ class AccountController extends Controller
                 $addItem($v->speedGovernors, 'Speed Gov', 'valid_until', 'bill_amount');
             }
 
-            // Sort by date (Newest first)
             usort($statement, fn($a, $b) => strtotime($b['raw_date']) - strtotime($a['raw_date']));
 
             return response()->json([

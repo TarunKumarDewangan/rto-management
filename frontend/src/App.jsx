@@ -9,6 +9,7 @@ import CreateCitizen from './components/CreateCitizen';
 import CitizenDetails from './components/CitizenDetails';
 import AccountStatement from './components/AccountStatement';
 import ExpiryReports from './components/ExpiryReports';
+import BackupPage from './components/BackupPage';
 function App() {
   return (
     <BrowserRouter>
@@ -24,6 +25,7 @@ function App() {
         <Route path="/citizens/:id" element={<CitizenDetails />} />
         <Route path="/citizens/:id/accounts" element={<AccountStatement />} />
         <Route path="/reports/expiry" element={<ExpiryReports />} />
+        <Route path="/backup" element={<BackupPage />} />
       </Routes>
     </BrowserRouter>
   );

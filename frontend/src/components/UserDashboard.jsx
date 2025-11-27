@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom"; // <--- IMPORT LINK
 import UserNavbar from "./UserNavbar";
 
 export default function UserDashboard() {
@@ -27,8 +28,8 @@ export default function UserDashboard() {
         fetchStats();
     }, []);
 
-    // Card Component for Reusability
-    const StatCard = ({ icon, color, title, value, subColor }) => (
+    // Helper Component for Stats
+    const StatCard = ({ icon, color, subColor, title, value }) => (
         <div className="col-md-3">
             <div className="card border-0 shadow-sm h-100">
                 <div className="card-body d-flex align-items-center">
@@ -49,10 +50,10 @@ export default function UserDashboard() {
         <div className="bg-light min-vh-100">
             <UserNavbar />
 
-            <div className="container mt-4">
+            <div className="container mt-4 pb-5">
                 {/* Welcome Header */}
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h2 className="fw-bold text-dark">Dashboard</h2>
+                    <h3 className="fw-bold text-dark">Dashboard</h3>
                     <span className="text-muted">Welcome back, <span className="fw-bold text-dark">{user?.name}</span></span>
                 </div>
 
@@ -92,42 +93,53 @@ export default function UserDashboard() {
                 <h5 className="text-muted mb-3">Quick Actions</h5>
                 <div className="row g-4">
 
-                    {/* Manage Citizens */}
+                    {/* 1. Manage Citizens */}
                     <div className="col-md-4">
-                        <div className="card border-0 shadow-sm h-100 text-center p-3">
+                        <div className="card border-0 shadow-sm h-100 text-center p-4">
                             <div className="card-body">
                                 <i className="bi bi-people-fill fs-1 text-primary mb-3 d-block"></i>
                                 <h5 className="card-title fw-bold">Manage Citizens</h5>
-                                <p className="card-text text-muted small">Add new customers or update vehicle details.</p>
+                                <p className="card-text text-muted small mb-4">Add new customers or update vehicle details.</p>
 
                                 <div className="d-grid gap-2">
-                                    <button className="btn btn-primary"> + New Citizen</button>
-                                    <button className="btn btn-outline-primary">View All</button>
+                                    {/* LINKED BUTTONS */}
+                                    <Link to="/create-citizen" className="btn btn-primary fw-bold">
+                                         + New Citizen
+                                    </Link>
+                                    <Link to="/citizens" className="btn btn-outline-primary fw-bold">
+                                        View All
+                                    </Link>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Expiry Reports */}
+                    {/* 2. Expiry Reports */}
                     <div className="col-md-4">
-                        <div className="card border-0 shadow-sm h-100 text-center p-3">
+                        <div className="card border-0 shadow-sm h-100 text-center p-4">
                             <div className="card-body">
                                 <i className="bi bi-exclamation-triangle-fill fs-1 text-success mb-3 d-block"></i>
                                 <h5 className="card-title fw-bold">Expiry Reports</h5>
-                                <p className="card-text text-muted small">Track documents expiring soon and send alerts.</p>
-                                <button className="btn btn-success w-100 mt-2">View Reports</button>
+                                <p className="card-text text-muted small mb-4">Track documents expiring soon and send alerts.</p>
+
+                                {/* LINKED BUTTON */}
+                                <Link to="/reports/expiry" className="btn btn-success w-100 mt-auto fw-bold">
+                                    View Reports
+                                </Link>
                             </div>
                         </div>
                     </div>
 
-                    {/* Data Backup */}
+                    {/* 3. Data Backup */}
                     <div className="col-md-4">
-                        <div className="card border-0 shadow-sm h-100 text-center p-3">
+                        <div className="card border-0 shadow-sm h-100 text-center p-4">
                             <div className="card-body">
                                 <i className="bi bi-floppy-fill fs-1 text-secondary mb-3 d-block"></i>
                                 <h5 className="card-title fw-bold">Data Backup</h5>
-                                <p className="card-text text-muted small">Download database backup (CSV/ZIP).</p>
-                                <button className="btn btn-secondary w-100 mt-2">Go to Backup</button>
+                                <p className="card-text text-muted small mb-4">Download database backup (CSV/ZIP).</p>
+                               <Link to="/backup" className="btn btn-secondary w-100 mt-auto fw-bold">
+    Go to Backup
+</Link>
                             </div>
                         </div>
                     </div>

@@ -42,7 +42,6 @@ class AuthController extends Controller
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-
         $request->validate([
             'name' => 'required',
             'email' => 'required|email|unique:users',
@@ -60,7 +59,8 @@ class AuthController extends Controller
     }
 
     // 3. Logout
-    public function logout(Request $request) {
+    public function logout(Request $request)
+    {
         $request->user()->tokens()->delete();
         return response()->json(['message' => 'Logged out']);
     }

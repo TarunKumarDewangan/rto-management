@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\FitnessController;
 use App\Http\Controllers\Api\VltdController;
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\ExpiryReportController;
+use App\Http\Controllers\Api\BackupController;
 
 
 // Public Route
@@ -77,4 +78,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/payments/{id}', [PaymentController::class, 'destroy']);
 
     Route::get('/reports/expiry', [ExpiryReportController::class, 'index']);
+
+    Route::get('/export/backup', [BackupController::class, 'export']);
 });
