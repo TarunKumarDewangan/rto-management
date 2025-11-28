@@ -26,24 +26,36 @@ class TaxController extends Controller
 
     public function store(Request $request)
     {
+        // Check Security
         if (!$this->checkOwnership($request->vehicle_id))
             return response()->json(['error' => 'Unauthorized'], 403);
 
         $validator = Validator::make($request->all(), [
             'vehicle_id' => 'required|exists:vehicles,id',
-            'tax_mode' => 'required',
-            'upto_date' => 'required|date'
+            'upto_date' => 'required|date',
+            'tax_mode' => 'nullable|string', // Optional
+            'from_date' => 'nullable|date',
+            'govt_fee' => 'nullable|numeric',
+            'bill_amount' => 'nullable|numeric',
+            'type' => 'nullable|string',
         ]);
+
         if ($validator->fails())
             return response()->json(['errors' => $validator->errors()], 422);
 
+        // --- FIX: Clean Data (Convert "" to NULL) ---
         $data = $request->all();
+        $data['tax_mode'] = $request->tax_mode ?: null; // Handle empty tax mode
         $data['from_date'] = $request->from_date ?: null;
         $data['govt_fee'] = $request->govt_fee !== "" ? $request->govt_fee : null;
         $data['bill_amount'] = $request->bill_amount !== "" ? $request->bill_amount : null;
 
-        $tax = Tax::create($data);
-        return response()->json(['message' => 'Saved', 'tax' => $tax]);
+        try {
+            $tax = Tax::create($data);
+            return response()->json(['message' => 'Saved', 'tax' => $tax]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
 
     public function update(Request $request, $id)
@@ -52,7 +64,9 @@ class TaxController extends Controller
         if (!$this->checkOwnership($tax->vehicle_id))
             return response()->json(['error' => 'Unauthorized'], 403);
 
+        // --- FIX: Clean Data ---
         $data = $request->all();
+        $data['tax_mode'] = $request->tax_mode ?: null;
         $data['from_date'] = $request->from_date ?: null;
         $data['govt_fee'] = $request->govt_fee !== "" ? $request->govt_fee : null;
         $data['bill_amount'] = $request->bill_amount !== "" ? $request->bill_amount : null;

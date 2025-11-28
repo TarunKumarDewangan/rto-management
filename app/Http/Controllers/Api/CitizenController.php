@@ -74,4 +74,35 @@ class CitizenController extends Controller
 
         return response()->json($citizen);
     }
+
+    public function update(Request $request, $id)
+    {
+        // Ensure user owns the citizen
+        $citizen = Citizen::where('id', $id)->where('user_id', $request->user()->id)->firstOrFail();
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'mobile_number' => 'required|string',
+            'email' => 'nullable|email',
+            'birth_date' => 'nullable|date',
+        ]);
+
+        if ($validator->fails())
+            return response()->json(['errors' => $validator->errors()], 422);
+
+        $data = $request->all();
+        // Handle empty date
+        $data['birth_date'] = $request->birth_date ?: null;
+
+        $citizen->update($data);
+
+        return response()->json(['message' => 'Citizen Updated Successfully']);
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        $citizen = Citizen::where('id', $id)->where('user_id', $request->user()->id)->firstOrFail();
+        $citizen->delete();
+        return response()->json(['message' => 'Citizen Deleted']);
+    }
 }

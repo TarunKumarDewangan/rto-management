@@ -22,9 +22,13 @@ class Citizen extends Model
         'city_district',
     ];
 
-    /**
-     * Relationship: A Citizen has many Vehicles
-     */
+    // --- ADD THIS FUNCTION ---
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+    // ------------------------
+
     public function vehicles()
     {
         return $this->hasMany(Vehicle::class);

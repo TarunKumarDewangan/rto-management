@@ -21,6 +21,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'is_active',
+        'whatsapp_key', // Added
+        'whatsapp_host' // Added
     ];
 
     /**

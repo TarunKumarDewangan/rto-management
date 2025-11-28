@@ -18,13 +18,13 @@ class Vehicle extends Model
         'engine_no',
     ];
 
-    // Parent Relationship
+    // --- 1. Parent Relationship ---
     public function citizen()
     {
         return $this->belongsTo(Citizen::class);
     }
 
-    // --- ADD THESE RELATIONSHIPS ---
+    // --- 2. Document Relationships (Required for Search) ---
 
     public function taxes()
     {
@@ -43,8 +43,6 @@ class Vehicle extends Model
 
     public function fitnesses()
     {
-        // Laravel tries to find 'fitnesses' table, but if you named model 'Fitness',
-        // standard plural might imply the table is 'fitnesses' (which we created).
         return $this->hasMany(Fitness::class);
     }
 

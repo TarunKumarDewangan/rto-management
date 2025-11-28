@@ -290,7 +290,104 @@ export default function CitizenDetails() {
       {showModal && (<div className="modal d-block" style={{backgroundColor:"rgba(0,0,0,0.5)"}}><div className="modal-dialog modal-dialog-centered"><div className="modal-content rounded-1 border-0 shadow-lg"><div className="modal-header py-2 border-bottom"><h5 className="modal-title fw-bold">Add New Vehicle</h5><button className="btn-close" onClick={()=>setShowModal(false)}></button></div><div className="modal-body p-4"><form onSubmit={handleSaveVehicle}><div className="mb-3"><label className="form-label text-muted small fw-bold">Registration No *</label><input type="text" className="form-control" value={vehicleForm.registration_no} onChange={(e)=>setVehicleForm({...vehicleForm,registration_no:e.target.value})} required /></div><div className="row mb-3"><div className="col-md-6"><label className="form-label text-muted small fw-bold">Type</label><select className="form-select" value={vehicleForm.type} onChange={(e)=>setVehicleForm({...vehicleForm,type:e.target.value})}><option value="">Select...</option>{vehicleTypes.map(t=><option key={t} value={t}>{t}</option>)}</select></div><div className="col-md-6"><label className="form-label text-muted small fw-bold">Model</label><input type="text" className="form-control" value={vehicleForm.make_model} onChange={(e)=>setVehicleForm({...vehicleForm,make_model:e.target.value})} /></div></div><div className="row mb-3"><div className="col-md-6"><label className="form-label text-muted small fw-bold">Chassis No</label><input type="text" className="form-control" value={vehicleForm.chassis_no} onChange={(e)=>setVehicleForm({...vehicleForm,chassis_no:e.target.value})} /></div><div className="col-md-6"><label className="form-label text-muted small fw-bold">Engine No</label><input type="text" className="form-control" value={vehicleForm.engine_no} onChange={(e)=>setVehicleForm({...vehicleForm,engine_no:e.target.value})} /></div></div><button type="submit" className="btn btn-primary w-100">Save Vehicle</button></form></div></div></div></div>)}
 
      {/* 2. TAX MODAL */}
-     {showTaxModal && selectedVehicle && (<div className="modal d-block" style={{backgroundColor:"rgba(0,0,0,0.5)"}}><div className="modal-dialog modal-lg modal-dialog-centered"><div className="modal-content rounded-1 border-0 shadow-lg"><div className="modal-header py-2"><h5 className="modal-title fw-bold">Manage Tax</h5><button type="button" className="btn-close" onClick={()=>setShowTaxModal(false)}></button></div><div className="modal-body p-3"><div className="table-responsive border mb-4"><table className="table table-bordered mb-0 text-center align-middle" style={{fontSize:'13px'}}><thead className="table-light"><tr><th>Mode</th><th>From</th><th>Upto</th><th>Govt Fee</th><th>Bill</th><th>Paid</th><th>Balance</th><th>Action</th></tr></thead><tbody>{taxRecords.map(r=>{const p=r.payments?.reduce((s,x)=>s+Number(x.amount),0)||0;const b=Number(r.bill_amount||0)-p;return(<tr key={r.id}><td>{r.tax_mode}</td><td>{r.from_date||'-'}</td><td>{r.upto_date}</td><td>₹{r.govt_fee||0}</td><td>₹{r.bill_amount||0}</td><td className="text-success">₹{p}</td><td className="text-danger">₹{b}</td><td><div className="d-flex gap-1 justify-content-center">{b>0&&<button onClick={()=>openPayModal(r,'tax')} className="btn btn-success btn-sm px-2 py-0">Pay</button>}<button onClick={()=>handleEditTax(r)} className="btn btn-info btn-sm px-2 py-0 text-white">Edit</button><button onClick={()=>handleDeleteTax(r.id)} className="btn btn-danger btn-sm px-2 py-0">X</button></div></td></tr>)})}</tbody></table></div><h6 className="fw-bold text-primary mb-3">Add/Edit Tax</h6><form onSubmit={handleSaveTax}><div className="row g-2 mb-2"><div className="col-md-3"><label className="small text-muted mb-1">Tax Mode</label><select className="form-select form-select-sm" value={taxForm.tax_mode} onChange={(e)=>setTaxForm({...taxForm,tax_mode:e.target.value})} required><option value="">Select...</option>{taxModes.map(m=><option key={m} value={m}>{m}</option>)}</select></div><div className="col-md-3"><label className="small text-muted mb-1">Govt Fee</label><input type="number" className="form-control form-select-sm" value={taxForm.govt_fee} onChange={(e)=>setTaxForm({...taxForm,govt_fee:e.target.value})}/></div><div className="col-md-3"><label className="small text-muted mb-1">Bill Amount</label><input type="number" className="form-control form-select-sm" value={taxForm.bill_amount} onChange={(e)=>setTaxForm({...taxForm,bill_amount:e.target.value})}/></div><div className="col-md-3"><label className="small text-muted mb-1">Type</label><input type="text" className="form-control form-select-sm" value={taxForm.type} onChange={(e)=>setTaxForm({...taxForm,type:e.target.value})}/></div></div><div className="row g-2 mb-3"><div className="col-md-6"><label className="small text-muted mb-1">From</label><input type="date" className="form-control form-select-sm" value={taxForm.from_date} onChange={(e)=>setTaxForm({...taxForm,from_date:e.target.value})}/></div><div className="col-md-6"><label className="small text-muted mb-1">Upto *</label><input type="date" className="form-control form-select-sm" value={taxForm.upto_date} onChange={(e)=>setTaxForm({...taxForm,upto_date:e.target.value})} required/></div></div><button type="submit" className="btn btn-success w-100 fw-bold">Save</button></form></div></div></div></div>)}
+                            {/* 2. TAX MODAL */}
+{showTaxModal && selectedVehicle && (
+  <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+    <div className="modal-dialog modal-lg modal-dialog-centered">
+      <div className="modal-content rounded-1 border-0 shadow-lg">
+        <div className="modal-header py-2">
+          <h5 className="modal-title fw-bold">Manage Tax - {selectedVehicle.registration_no}</h5>
+          <button type="button" className="btn-close" onClick={() => setShowTaxModal(false)}></button>
+        </div>
+        <div className="modal-body p-3">
+
+          {/* Table of existing records */}
+          <div className="table-responsive border mb-4">
+            <table className="table table-bordered mb-0 text-center align-middle" style={{ fontSize: '13px' }}>
+              <thead className="table-light">
+                <tr>
+                  <th>Mode</th><th>From</th><th>Upto</th><th>Govt Fee</th><th>Bill</th><th>Paid</th><th>Balance</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {taxRecords.length > 0 ? taxRecords.map((tax) => {
+                  const paid = tax.payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+                  const balance = Number(tax.bill_amount || 0) - paid;
+                  return (
+                    <tr key={tax.id}>
+                      <td>{tax.tax_mode}</td>
+                      <td>{tax.from_date || '-'}</td>
+                      <td>{tax.upto_date}</td>
+                      <td>₹{tax.govt_fee || 0}</td>
+                      <td>₹{tax.bill_amount || 0}</td>
+                      <td className="text-success fw-bold">₹{paid}</td>
+                      <td className="text-danger fw-bold">₹{balance}</td>
+                      <td>
+                        <div className="d-flex gap-1 justify-content-center">
+                          {balance > 0 && (
+                            <button onClick={() => openPayModal(tax, 'tax')} className="btn btn-success btn-sm px-2 py-0" style={{ fontSize: '10px' }}>Pay</button>
+                          )}
+                          <button onClick={() => handleEditTax(tax)} className="btn btn-info btn-sm px-2 py-0 text-white" style={{ fontSize: '10px' }}>Edit</button>
+                          <button onClick={() => handleDeleteTax(tax.id)} className="btn btn-danger btn-sm px-2 py-0" style={{ fontSize: '10px' }}>X</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }) : (
+                  <tr><td colSpan="8" className="text-muted py-2">No tax records found.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Form */}
+          <h6 className="fw-bold text-primary mb-3">{isEditingTax ? "Edit Tax" : "Add New Tax"}</h6>
+          <form onSubmit={handleSaveTax}>
+            <div className="row g-2 mb-2">
+              <div className="col-md-3">
+                <label className="small text-muted mb-1">Tax Mode</label>
+                {/* REMOVED 'required' HERE */}
+                <select
+                  className="form-select form-select-sm"
+                  value={taxForm.tax_mode}
+                  onChange={(e) => setTaxForm({ ...taxForm, tax_mode: e.target.value })}
+                >
+                  <option value="">Select...</option>
+                  {taxModes.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="col-md-3">
+                <label className="small text-muted mb-1">Govt Fee</label>
+                <input type="number" className="form-control form-select-sm" value={taxForm.govt_fee} onChange={(e) => setTaxForm({ ...taxForm, govt_fee: e.target.value })} />
+              </div>
+              <div className="col-md-3">
+                <label className="small text-muted mb-1">Bill Amount</label>
+                <input type="number" className="form-control form-select-sm" value={taxForm.bill_amount} onChange={(e) => setTaxForm({ ...taxForm, bill_amount: e.target.value })} />
+              </div>
+              <div className="col-md-3">
+                <label className="small text-muted mb-1">Type</label>
+                <input type="text" className="form-control form-select-sm" value={taxForm.type} onChange={(e) => setTaxForm({ ...taxForm, type: e.target.value })} />
+              </div>
+            </div>
+            <div className="row g-2 mb-3">
+              <div className="col-md-6">
+                <label className="small text-muted mb-1">From</label>
+                <input type="date" className="form-control form-select-sm" value={taxForm.from_date} onChange={(e) => setTaxForm({ ...taxForm, from_date: e.target.value })} />
+              </div>
+              <div className="col-md-6">
+                <label className="small text-muted mb-1">Upto *</label>
+                <input type="date" className="form-control form-select-sm" value={taxForm.upto_date} onChange={(e) => setTaxForm({ ...taxForm, upto_date: e.target.value })} required />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-success w-100 fw-bold">
+              {isEditingTax ? "Update" : "Save"} Record
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
      {/* 3. INSURANCE MODAL */}
       {showInsModal && selectedVehicle && (<div className="modal d-block" style={{backgroundColor:"rgba(0,0,0,0.5)"}}><div className="modal-dialog modal-lg modal-dialog-centered"><div className="modal-content rounded-1 border-0 shadow-lg"><div className="modal-header py-2"><h5 className="modal-title fw-bold">Manage Insurance</h5><button type="button" className="btn-close" onClick={()=>setShowInsModal(false)}></button></div><div className="modal-body p-3"><div className="table-responsive border mb-4"><table className="table table-bordered mb-0 text-center align-middle" style={{fontSize:'13px'}}><thead className="table-light"><tr><th>Company</th><th>Period</th><th>Bill</th><th>Paid</th><th>Balance</th><th>Action</th></tr></thead><tbody>{insRecords.map(r=>{const p=r.payments?.reduce((s,x)=>s+Number(x.amount),0)||0;const b=Number(r.bill_amount||0)-p;return(<tr key={r.id}><td>{r.company}</td><td>{r.start_date} to {r.end_date}</td><td>₹{r.bill_amount}</td><td className="text-success">₹{p}</td><td className="text-danger">₹{b}</td><td><div className="d-flex gap-1 justify-content-center">{b>0&&<button onClick={()=>openPayModal(r,'insurance')} className="btn btn-success btn-sm px-2 py-0">Pay</button>}<button onClick={()=>handleEditIns(r)} className="btn btn-info btn-sm px-2 py-0 text-white">Edit</button><button onClick={()=>handleDeleteIns(r.id)} className="btn btn-danger btn-sm px-2 py-0">X</button></div></td></tr>)})}</tbody></table></div><h6 className="fw-bold text-primary mb-3">Add/Edit Insurance</h6><form onSubmit={handleSaveIns}><div className="row g-2 mb-2"><div className="col-md-6"><label className="small text-muted mb-1">Company</label><input type="text" className="form-control form-select-sm" value={insForm.company} onChange={(e)=>setInsForm({...insForm,company:e.target.value})}/></div><div className="col-md-6"><label className="small text-muted mb-1">Type</label><select className="form-select form-select-sm" value={insForm.type} onChange={(e)=>setInsForm({...insForm,type:e.target.value})}><option value="">Select...</option>{insTypes.map(t=><option key={t} value={t}>{t}</option>)}</select></div></div><div className="row g-2 mb-2"><div className="col-md-6"><label className="small text-muted mb-1">Actual Amount</label><input type="number" className="form-control form-select-sm" value={insForm.actual_amount} onChange={(e)=>setInsForm({...insForm,actual_amount:e.target.value})}/></div><div className="col-md-6"><label className="small text-muted mb-1">Bill Amount</label><input type="number" className="form-control form-select-sm" value={insForm.bill_amount} onChange={(e)=>setInsForm({...insForm,bill_amount:e.target.value})}/></div></div><div className="row g-2 mb-3"><div className="col-md-6"><label className="small text-muted mb-1">Start Date</label><input type="date" className="form-control form-select-sm" value={insForm.start_date} onChange={(e)=>setInsForm({...insForm,start_date:e.target.value})}/></div><div className="col-md-6"><label className="small text-muted mb-1">End Date *</label><input type="date" className="form-control form-select-sm" value={insForm.end_date} onChange={(e)=>setInsForm({...insForm,end_date:e.target.value})} required/></div></div><button type="submit" className="btn btn-success w-100 fw-bold">Save</button></form></div></div></div></div>)}
