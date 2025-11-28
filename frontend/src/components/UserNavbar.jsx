@@ -1,8 +1,8 @@
-import { Link, useNavigate, useLocation } from "react-router-dom"; // Import Link and useLocation
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 export default function UserNavbar() {
     const navigate = useNavigate();
-    const location = useLocation(); // To detect active page
+    const location = useLocation();
     const user = JSON.parse(localStorage.getItem('user'));
 
     const logout = () => {
@@ -10,7 +10,6 @@ export default function UserNavbar() {
         navigate('/');
     };
 
-    // Helper to check if link is active
     const isActive = (path) => location.pathname === path ? 'active fw-semibold' : '';
 
     return (
@@ -20,7 +19,6 @@ export default function UserNavbar() {
 
                 <div className="collapse navbar-collapse ms-4">
                     <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-                        {/* Use Link instead of <a> */}
                         <li className="nav-item">
                             <Link className={`nav-link ${isActive('/dashboard')}`} to="/dashboard">Dashboard</Link>
                         </li>
@@ -28,16 +26,16 @@ export default function UserNavbar() {
                             <Link className={`nav-link ${isActive('/citizens')}`} to="/citizens">Citizens</Link>
                         </li>
                         <li className="nav-item">
-                            <Link className={`nav-link ${isActive('/reports/expiry')}`} to="/reports/expiry">
-    Expiry Reports
-</Link>
+                            <Link className={`nav-link ${isActive('/reports/expiry')}`} to="/reports/expiry">Expiry Reports</Link>
+                        </li>
+                        {/* --- NEW BACKUP LINK --- */}
+                        <li className="nav-item">
+                            <Link className={`nav-link ${isActive('/backup')}`} to="/backup">Backup</Link>
                         </li>
                     </ul>
                 </div>
 
-                {/* ... rest of the navbar code (Search, Profile, Logout) ... */}
-                 <div className="d-flex align-items-center gap-3">
-                     {/* Keep your existing Search & Profile code here */}
+                <div className="d-flex align-items-center gap-3">
                      <div className="text-end d-none d-md-block lh-1">
                         <small className="text-muted d-block" style={{fontSize: '12px'}}>Signed in as</small>
                         <span className="fw-bold text-primary">{user?.name}</span>

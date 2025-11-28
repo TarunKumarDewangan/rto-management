@@ -1,26 +1,32 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom"; // Import useSearchParams
 import UserNavbar from "./UserNavbar";
 
 export default function ExpiryReports() {
     const token = localStorage.getItem("token");
+    const [searchParams] = useSearchParams(); // Get URL params
+
+    // Check if we came from a specific citizen page
+    const urlCitizenId = searchParams.get("citizen_id") || "";
 
     // Filters State
     const [filters, setFilters] = useState({
-        owner_name: '', vehicle_no: '', doc_type: '', expiry_from: '', expiry_upto: ''
+        owner_name: '',
+        vehicle_no: '',
+        doc_type: '',
+        expiry_from: '',
+        expiry_upto: '',
+        citizen_id: urlCitizenId // Set initial ID from URL
     });
 
-    // Data State
-    const [data, setData] = useState(null); // Contains pagination data
+    const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    // Fetch Function
     const fetchReport = async (pageNo = 1) => {
         setLoading(true);
         try {
             const params = new URLSearchParams({ ...filters, page: pageNo });
-            // Remove empty params
             for (const [key, value] of params.entries()) { if (!value) params.delete(key); }
 
             const res = await axios.get(`http://127.0.0.1:8000/api/reports/expiry?${params.toString()}`, {
@@ -34,10 +40,9 @@ export default function ExpiryReports() {
         }
     };
 
-    // Initial Load
-    useEffect(() => { fetchReport(1); }, []);
+    // Reload if URL param changes or on mount
+    useEffect(() => { fetchReport(1); }, [urlCitizenId]);
 
-    // Handlers
     const handleFilterChange = (e) => setFilters({ ...filters, [e.target.name]: e.target.value });
 
     const handleSearch = (e) => {
@@ -46,30 +51,27 @@ export default function ExpiryReports() {
     };
 
     const handleReset = () => {
-        setFilters({ owner_name: '', vehicle_no: '', doc_type: '', expiry_from: '', expiry_upto: '' });
-        // Optionally trigger fetch here, or let user click search
+        setFilters({ owner_name: '', vehicle_no: '', doc_type: '', expiry_from: '', expiry_upto: '', citizen_id: '' });
+        // Trigger fetch manually after state update if needed, or let user click search
     };
 
-    // Badge Color Helper
-    const getTypeColor = (type) => {
-        switch (type) {
-            case 'Tax': return 'bg-secondary';
-            case 'Insurance': return 'bg-primary';
-            case 'Fitness': return 'bg-info text-dark';
-            case 'PUCC': return 'bg-success';
-            case 'Permit': return 'bg-warning text-dark';
-            default: return 'bg-dark';
-        }
-    };
+    // ... (Keep getTypeColor and Return structure same as before) ...
+    // Just ensure you pass the updated `filters` and `handleFilterChange` to inputs.
 
     return (
         <div className="bg-light min-vh-100">
             <UserNavbar />
 
             <div className="container mt-4 pb-5">
-                <h3 className="text-primary fw-bold mb-4">Expiry Reports</h3>
+                <h3 className="text-primary fw-bold mb-4">
+                    {urlCitizenId ? "Expiry Report (Single Citizen)" : "Expiry Reports (All)"}
+                </h3>
 
-                {/* --- 1. FILTER CARD --- */}
+                {/* ... Keep the rest of the UI (Filter Card & Table) exactly as it was ... */}
+
+                {/* Copy the Filter Card & Table code from previous ExpiryReports.jsx here */}
+                {/* Just make sure the input for 'owner_name', 'vehicle_no' etc uses the `filters` state */}
+
                 <div className="card border-0 shadow-sm mb-4">
                     <div className="card-header bg-white fw-bold">Filter Records</div>
                     <div className="card-body">
@@ -79,6 +81,7 @@ export default function ExpiryReports() {
                                     <label className="form-label small fw-bold">Owner Name</label>
                                     <input type="text" className="form-control" name="owner_name" value={filters.owner_name} onChange={handleFilterChange} placeholder="Search Owner" />
                                 </div>
+                                {/* ... other inputs ... */}
                                 <div className="col-md-3">
                                     <label className="form-label small fw-bold">Vehicle No</label>
                                     <input type="text" className="form-control" name="vehicle_no" value={filters.vehicle_no} onChange={handleFilterChange} placeholder="e.g. CG04..." />
@@ -113,7 +116,7 @@ export default function ExpiryReports() {
                     </div>
                 </div>
 
-                {/* --- 2. RESULTS TABLE --- */}
+                 {/* --- 2. RESULTS TABLE --- */}
                 <div className="card border-0 shadow-sm">
                     <div className="card-body p-0">
                         <div className="table-responsive">
@@ -141,7 +144,7 @@ export default function ExpiryReports() {
                                                     <td>{row.mobile_number}</td>
                                                     <td className="fw-bold">{row.registration_no}</td>
                                                     <td>
-                                                        <span className={`badge rounded-pill ${getTypeColor(row.doc_type)}`}>
+                                                        <span className="badge bg-secondary rounded-pill">
                                                             {row.doc_type}
                                                         </span>
                                                     </td>

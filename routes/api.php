@@ -80,4 +80,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/expiry', [ExpiryReportController::class, 'index']);
 
     Route::get('/export/backup', [BackupController::class, 'export']);
+    Route::get('/backup/get-link', [BackupController::class, 'getDownloadLink']);
 });
+
+Route::get('/backup/download', [BackupController::class, 'export'])
+    ->name('backup.download')
+    ->middleware('signed');

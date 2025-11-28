@@ -13,15 +13,16 @@ class ExpiryReportController extends Controller
         $userId = $request->user()->id;
 
         // Filters
+        $citizenId = $request->citizen_id; // <--- NEW FILTER
         $name = $request->owner_name;
         $vehicleNo = $request->vehicle_no;
         $docType = $request->doc_type;
         $dateFrom = $request->expiry_from;
         $dateUpto = $request->expiry_upto;
 
-        // Helper to build query for each table
+        // Helper to build query
         $buildQuery = function ($table, $typeLabel, $dateCol) use ($userId) {
-            return DB::table($table)
+            return \Illuminate\Support\Facades\DB::table($table)
                 ->join('vehicles', "$table.vehicle_id", '=', 'vehicles.id')
                 ->join('citizens', 'vehicles.citizen_id', '=', 'citizens.id')
                 ->where('citizens.user_id', $userId)
@@ -30,32 +31,26 @@ class ExpiryReportController extends Controller
                     'citizens.name as owner_name',
                     'citizens.mobile_number',
                     'vehicles.registration_no',
-                    DB::raw("'$typeLabel' as doc_type"),
+                    \Illuminate\Support\Facades\DB::raw("'$typeLabel' as doc_type"),
                     "$table.$dateCol as expiry_date"
                 );
         };
 
-        // Create queries for all 7 document types
+        // ... (Queries for all 7 tables remain the same) ...
+        // (Copy the array of queries from previous code)
         $queries = [];
-
         if (!$docType || $docType == 'Tax')
             $queries[] = $buildQuery('taxes', 'Tax', 'upto_date');
-
         if (!$docType || $docType == 'Insurance')
             $queries[] = $buildQuery('insurances', 'Insurance', 'end_date');
-
         if (!$docType || $docType == 'PUCC')
             $queries[] = $buildQuery('puccs', 'PUCC', 'valid_until');
-
         if (!$docType || $docType == 'Fitness')
             $queries[] = $buildQuery('fitnesses', 'Fitness', 'valid_until');
-
         if (!$docType || $docType == 'Permit')
             $queries[] = $buildQuery('permits', 'Permit', 'valid_until');
-
         if (!$docType || $docType == 'Speed Gov')
             $queries[] = $buildQuery('speed_governors', 'Speed Gov', 'valid_until');
-
         if (!$docType || $docType == 'VLTD')
             $queries[] = $buildQuery('vltds', 'VLTD', 'valid_until');
 
@@ -68,8 +63,12 @@ class ExpiryReportController extends Controller
                 $mainQuery->union($q);
         }
 
-        // Apply Filters on the combined result
-        $result = DB::query()->fromSub($mainQuery, 'combined_table');
+        $result = \Illuminate\Support\Facades\DB::query()->fromSub($mainQuery, 'combined_table');
+
+        // --- APPLY NEW CITIZEN FILTER ---
+        if ($citizenId) {
+            $result->where('citizen_id', $citizenId);
+        }
 
         if ($name)
             $result->where('owner_name', 'like', "%$name%");
@@ -80,10 +79,8 @@ class ExpiryReportController extends Controller
         if ($dateUpto)
             $result->whereDate('expiry_date', '<=', $dateUpto);
 
-        // Order by Expiry Date (Soonest first)
         $result->orderBy('expiry_date', 'asc');
 
-        // Paginate
         return response()->json($result->paginate(15));
     }
 }

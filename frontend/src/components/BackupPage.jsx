@@ -35,7 +35,7 @@ export default function BackupPage() {
         setSelection(newState);
     };
 
-    // Handle Download
+    // Handle Download (Updated to use Secure Link)
     const handleDownload = async () => {
         const activeKeys = Object.keys(selection).filter(k => selection[k]);
 
@@ -48,24 +48,20 @@ export default function BackupPage() {
         const queryString = activeKeys.join(',');
 
         try {
-            // We use axios with 'blob' response type to handle file download with Auth Token
-            const response = await axios.get(`http://127.0.0.1:8000/api/export/backup?include=${queryString}`, {
-                headers: { Authorization: `Bearer ${token}` },
-                responseType: 'blob', // Important
+            // 1. Request a Secure Download Link from the Backend
+            // We send the token here to verify the user
+            const res = await axios.get(`http://127.0.0.1:8000/api/backup/get-link?include=${queryString}`, {
+                headers: { Authorization: `Bearer ${token}` }
             });
 
-            // Create a download link programmatically
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `RTO_Backup_${new Date().toISOString().slice(0,10)}.zip`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            toast.success("Backup Downloaded Successfully!");
+            // 2. Use the browser to open the link
+            // This bypasses Axios file handling, fixing IDM/CORS issues
+            window.location.href = res.data.url;
+
+            toast.success("Backup Started!");
         } catch (error) {
             console.error(error);
-            toast.error("Download failed.");
+            toast.error("Failed to generate backup link.");
         } finally {
             setDownloading(false);
         }

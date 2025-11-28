@@ -133,7 +133,10 @@ export default function CitizenDetails() {
             <div><h4 className="fw-bold text-primary mb-1">{citizen.name}</h4><div className="text-muted small mt-1"><span className="me-3"><i className="bi bi-phone me-1"></i> {citizen.mobile_number}</span><span><i className="bi bi-geo-alt me-1"></i> {citizen.city_district || "No Location"}</span></div></div>
             <div className="d-flex gap-2"><Link to={`/citizens/${id}/accounts`} className="btn btn-primary btn-sm px-3 shadow-sm">
     View Accounts
-</Link><button onClick={() => setShowModal(true)} className="btn btn-success btn-sm px-3">+ Add Vehicle</button><Link to="/citizens" className="btn btn-outline-secondary btn-sm px-3">Back</Link></div>
+</Link>
+ <Link to={`/reports/expiry?citizen_id=${id}`} className="btn btn-warning btn-sm px-3 fw-bold text-dark">
+        Expiry Check
+    </Link><button onClick={() => setShowModal(true)} className="btn btn-success btn-sm px-3">+ Add Vehicle</button><Link to="/citizens" className="btn btn-outline-secondary btn-sm px-3">Back</Link></div>
           </div>
         </div>
 
