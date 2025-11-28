@@ -5,22 +5,32 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Pucc;
+use App\Models\Vehicle;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class PuccController extends Controller
 {
+    // Helper to check if the logged-in user owns the vehicle
+    private function checkOwnership($vehicleId) {
+        return Vehicle::where('id', $vehicleId)
+            ->whereHas('citizen', function($q) {
+                $q->where('user_id', Auth::id());
+            })->exists();
+    }
+
     public function index($vehicleId)
     {
-        // Ensure 'payments' relationship exists in Model
-        $puccs = Pucc::where('vehicle_id', $vehicleId)
-            ->with('payments')
-            ->latest()
-            ->get();
+        if (!$this->checkOwnership($vehicleId)) return response()->json(['message' => 'Unauthorized'], 403);
+
+        $puccs = Pucc::where('vehicle_id', $vehicleId)->with('payments')->latest()->get();
         return response()->json($puccs);
     }
 
     public function store(Request $request)
     {
+        if (!$this->checkOwnership($request->vehicle_id)) return response()->json(['message' => 'Unauthorized'], 403);
+
         $validator = Validator::make($request->all(), [
             'vehicle_id' => 'required|exists:vehicles,id',
             'valid_until' => 'required|date',
@@ -30,27 +40,22 @@ class PuccController extends Controller
             'bill_amount' => 'nullable|numeric',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+        if ($validator->fails()) return response()->json(['errors' => $validator->errors()], 422);
 
-        // --- FIX: Convert Empty Strings to NULL ---
+        // Handle empty strings
         $data = $request->all();
         $data['valid_from'] = $request->valid_from ?: null;
         $data['actual_amount'] = $request->actual_amount !== "" ? $request->actual_amount : null;
         $data['bill_amount'] = $request->bill_amount !== "" ? $request->bill_amount : null;
 
-        try {
-            $pucc = Pucc::create($data);
-            return response()->json(['message' => 'PUCC Saved', 'data' => $pucc]);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
+        $pucc = Pucc::create($data);
+        return response()->json(['message' => 'PUCC Saved', 'data' => $pucc]);
     }
 
     public function update(Request $request, $id)
     {
         $pucc = Pucc::findOrFail($id);
+        if (!$this->checkOwnership($pucc->vehicle_id)) return response()->json(['message' => 'Unauthorized'], 403);
 
         $data = $request->all();
         $data['valid_from'] = $request->valid_from ?: null;
@@ -63,7 +68,10 @@ class PuccController extends Controller
 
     public function destroy($id)
     {
-        Pucc::destroy($id);
+        $pucc = Pucc::findOrFail($id);
+        if (!$this->checkOwnership($pucc->vehicle_id)) return response()->json(['message' => 'Unauthorized'], 403);
+
+        $pucc->delete();
         return response()->json(['message' => 'Deleted']);
     }
 }

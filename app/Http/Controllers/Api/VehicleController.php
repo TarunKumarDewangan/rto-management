@@ -4,18 +4,26 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Vehicle; // <--- THIS LINE IS CRITICAL
+use App\Models\Vehicle;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Citizen;
 
 class VehicleController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. Get the Current Logged-in User
         $user = $request->user();
 
-        // 2. Custom Check: Does this User already have this vehicle?
-        // We check if any vehicle with this Reg No exists belongs to a Citizen owned by this User.
+        // 1. Security: Ensure the Citizen belongs to this User
+        $isOwner = Citizen::where('id', $request->citizen_id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (!$isOwner) {
+            return response()->json(['message' => 'Unauthorized action.'], 403);
+        }
+
+        // 2. Check: Has this user already added this Vehicle No?
         $exists = Vehicle::where('registration_no', $request->registration_no)
             ->whereHas('citizen', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
@@ -28,21 +36,18 @@ class VehicleController extends Controller
             ], 422);
         }
 
-        // 3. Standard Validation (Removed 'unique:vehicles' rule)
         $validator = Validator::make($request->all(), [
             'citizen_id' => 'required|exists:citizens,id',
-            'registration_no' => 'required|string', // Removed 'unique'
+            'registration_no' => 'required|string',
             'type' => 'nullable|string',
             'make_model' => 'nullable|string',
             'chassis_no' => 'nullable|string',
             'engine_no' => 'nullable|string',
         ]);
 
-        if ($validator->fails()) {
+        if ($validator->fails())
             return response()->json(['errors' => $validator->errors()], 422);
-        }
 
-        // 4. Create Vehicle
         $vehicle = Vehicle::create($request->all());
 
         return response()->json(['message' => 'Vehicle Added Successfully', 'vehicle' => $vehicle]);

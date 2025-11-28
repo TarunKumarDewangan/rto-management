@@ -12,4 +12,8 @@ class SpeedGovernor extends Model
     {
         return $this->hasMany(Payment::class);
     }
+    public function vehicle()
+    {
+        return $this->belongsTo(Vehicle::class);
+    }
 }
