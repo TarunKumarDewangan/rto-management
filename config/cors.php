@@ -8,11 +8,13 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    // Apply CORS to all routes (you can later reduce this to ['api/*', 'sanctum/csrf-cookie'])
+    'paths' => ['*'],
 
+    // Allow all HTTP methods
     'allowed_methods' => ['*'],
 
-    // Allow ALL Local variations and Production
+    // Explicitly list allowed origins (your production + local dev)
     'allowed_origins' => [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
@@ -23,12 +25,16 @@ return [
 
     'allowed_origins_patterns' => [],
 
+    // Allow all headers
     'allowed_headers' => ['*'],
 
+    // Expose no custom headers (adjust if you need some)
     'exposed_headers' => [],
 
+    // How long the results of a preflight request can be cached (seconds)
     'max_age' => 0,
 
+    // If you send cookies/Authorization across origins, keep this true
     'supports_credentials' => true,
 
 ];
