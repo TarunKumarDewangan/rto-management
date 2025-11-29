@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-// --- CORRECT URL ---
-// Do NOT add '/api' at the end.
-// Your components already add it (e.g., "/api/login").
-const BASE_URL = 'https://api.rtodatahub.in';
+// Automatically choose URL: Localhost for dev, Production URL for build
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -13,7 +11,7 @@ const api = axios.create({
   },
 });
 
-// Attach token automatically
+// Add Token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {

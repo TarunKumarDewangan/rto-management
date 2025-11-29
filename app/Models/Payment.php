@@ -22,45 +22,15 @@ class Payment extends Model
         'remarks'
     ];
 
-    // --- ADD THESE RELATIONSHIPS ---
+    // Relationships
+    public function tax() { return $this->belongsTo(Tax::class); }
+    public function insurance() { return $this->belongsTo(Insurance::class); }
+    public function pucc() { return $this->belongsTo(Pucc::class); }
+    public function fitness() { return $this->belongsTo(Fitness::class); }
+    public function vltd() { return $this->belongsTo(Vltd::class); }
+    public function permit() { return $this->belongsTo(Permit::class); }
+    public function speedGovernor() { return $this->belongsTo(SpeedGovernor::class); }
 
-    public function tax()
-    {
-        return $this->belongsTo(Tax::class);
-    }
-
-    public function insurance()
-    {
-        return $this->belongsTo(Insurance::class);
-    }
-
-    public function pucc()
-    {
-        return $this->belongsTo(Pucc::class);
-    }
-
-    public function fitness()
-    {
-        // If your model is named 'Fitness', Laravel looks for 'fitnesses' table
-        return $this->belongsTo(Fitness::class);
-    }
-
-    public function vltd()
-    {
-        return $this->belongsTo(Vltd::class);
-    }
-
-    public function permit()
-    {
-        return $this->belongsTo(Permit::class);
-    }
-
-    public function speedGovernor()
-    {
-        return $this->belongsTo(SpeedGovernor::class);
-    }
-    public function vehicle()
-    {
-        return $this->belongsTo(Vehicle::class);
-    }
+    // Helper to get parent vehicle easily if needed
+    public function vehicle() { return $this->belongsTo(Vehicle::class); }
 }

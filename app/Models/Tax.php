@@ -19,16 +19,14 @@ class Tax extends Model
         'upto_date'
     ];
 
-    // --- ADD THIS FUNCTION ---
+    // This is the function causing the error if Payment model is missing
     public function payments()
     {
         return $this->hasMany(Payment::class);
     }
-    // ------------------------
 
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class);
     }
-
 }
