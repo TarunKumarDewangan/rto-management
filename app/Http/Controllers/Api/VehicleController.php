@@ -5,11 +5,19 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Vehicle;
-use Illuminate\Support\Facades\Validator;
 use App\Models\Citizen;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class VehicleController extends Controller
 {
+    // Helper to check ownership
+    private function checkOwnership($vehicle)
+    {
+        // Ensure the vehicle belongs to a citizen who belongs to the logged-in user
+        return $vehicle->citizen && $vehicle->citizen->user_id === Auth::id();
+    }
+
     public function store(Request $request)
     {
         $user = $request->user();
@@ -23,7 +31,7 @@ class VehicleController extends Controller
             return response()->json(['message' => 'Unauthorized action.'], 403);
         }
 
-        // 2. Check: Has this user already added this Vehicle No?
+        // 2. Check duplicate within user scope
         $exists = Vehicle::where('registration_no', $request->registration_no)
             ->whereHas('citizen', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
@@ -53,8 +61,10 @@ class VehicleController extends Controller
         return response()->json(['message' => 'Vehicle Added Successfully', 'vehicle' => $vehicle]);
     }
 
+    // --- UPDATE VEHICLE ---
     public function update(Request $request, $id)
     {
+        // Use 'with' to load citizen relationship to prevent null errors
         $vehicle = Vehicle::with('citizen')->findOrFail($id);
 
         if (!$this->checkOwnership($vehicle)) {
@@ -77,6 +87,7 @@ class VehicleController extends Controller
         return response()->json(['message' => 'Vehicle Updated Successfully']);
     }
 
+    // --- DELETE VEHICLE ---
     public function destroy($id)
     {
         $vehicle = Vehicle::with('citizen')->findOrFail($id);
