@@ -5,40 +5,32 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\URL; // Import URL
+use Illuminate\Support\Facades\URL;
 use ZipArchive;
-use Illuminate\Support\Facades\Auth;
 
 class BackupController extends Controller
 {
-    // --- NEW FUNCTION: Generate a Secure Link ---
     public function getDownloadLink(Request $request)
     {
-        // Create a secure, temporary URL valid for 5 minutes
-        // We pass the 'include' params into the signed URL
         $url = URL::signedRoute('backup.download', [
             'include' => $request->query('include'),
-            'user_id' => $request->user()->id // Pass ID for security check
+            'user_id' => $request->user()->id
         ], now()->addMinutes(5));
 
         return response()->json(['url' => $url]);
     }
 
-    // --- EXISTING EXPORT FUNCTION ---
     public function export(Request $request)
     {
         if (!class_exists('ZipArchive')) {
             return response()->json(['error' => 'PHP ZipArchive extension missing.'], 500);
         }
 
-        // Ensure the request has a valid signature (Laravel middleware handles this, but good to know)
         if (!$request->hasValidSignature()) {
             abort(403);
         }
 
-        // Security: Use the ID passed in the signed URL, not Auth::id() (since this route is outside Sanctum)
         $userId = $request->query('user_id');
-
         $selections = explode(',', $request->query('include'));
         $zipFileName = 'backup_' . date('Y-m-d_H-i-s') . '.zip';
         $zipPath = public_path($zipFileName);
@@ -46,11 +38,13 @@ class BackupController extends Controller
         $zip = new ZipArchive;
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
 
-            // 1. MASTER RECORD
+            // ==========================================
+            // 1. MASTER COMBINED RECORD (UPDATED)
+            // ==========================================
             if (in_array('master', $selections)) {
-                $masterData = DB::table('citizens')
-                    ->where('citizens.user_id', $userId) // Filter by User
-                    ->leftJoin('vehicles', 'citizens.id', '=', 'vehicles.citizen_id')
+                $query = DB::table('citizens')
+                    ->where('citizens.user_id', $userId)
+                    ->join('vehicles', 'citizens.id', '=', 'vehicles.citizen_id') // Use Join to ensure we get vehicle data
                     ->select(
                         'citizens.name',
                         'citizens.mobile_number',
@@ -59,12 +53,61 @@ class BackupController extends Controller
                         'vehicles.registration_no',
                         'vehicles.type',
                         'vehicles.make_model'
-                    )->get();
+                    );
 
-                $this->addCsvToZip($zip, 'master_combined.csv', $masterData);
+                // --- ADD SUBQUERIES FOR LATEST DATES ---
+                // This fetches the latest single date for each document type per vehicle
+
+                $query->addSelect([
+                    'tax_upto' => DB::table('taxes')
+                        ->select('upto_date')
+                        ->whereColumn('vehicle_id', 'vehicles.id')
+                        ->orderBy('upto_date', 'desc')
+                        ->limit(1),
+
+                    'insurance_upto' => DB::table('insurances')
+                        ->select('end_date')
+                        ->whereColumn('vehicle_id', 'vehicles.id')
+                        ->orderBy('end_date', 'desc')
+                        ->limit(1),
+
+                    'pucc_upto' => DB::table('puccs')
+                        ->select('valid_until')
+                        ->whereColumn('vehicle_id', 'vehicles.id')
+                        ->orderBy('valid_until', 'desc')
+                        ->limit(1),
+
+                    'fitness_upto' => DB::table('fitnesses')
+                        ->select('valid_until')
+                        ->whereColumn('vehicle_id', 'vehicles.id')
+                        ->orderBy('valid_until', 'desc')
+                        ->limit(1),
+
+                    'permit_upto' => DB::table('permits')
+                        ->select('valid_until')
+                        ->whereColumn('vehicle_id', 'vehicles.id')
+                        ->orderBy('valid_until', 'desc')
+                        ->limit(1),
+
+                    'vltd_upto' => DB::table('vltds')
+                        ->select('valid_until')
+                        ->whereColumn('vehicle_id', 'vehicles.id')
+                        ->orderBy('valid_until', 'desc')
+                        ->limit(1),
+
+                    'speed_gov_upto' => DB::table('speed_governors')
+                        ->select('valid_until')
+                        ->whereColumn('vehicle_id', 'vehicles.id')
+                        ->orderBy('valid_until', 'desc')
+                        ->limit(1),
+                ]);
+
+                $this->addCsvToZip($zip, 'master_combined.csv', $query->get());
             }
 
-            // 2. Individual Tables
+            // ==========================================
+            // 2. INDIVIDUAL TABLES (KEEP AS IS)
+            // ==========================================
             $tables = [
                 'citizen' => 'citizens',
                 'vehicle' => 'vehicles',
@@ -79,19 +122,19 @@ class BackupController extends Controller
 
             foreach ($tables as $key => $tableName) {
                 if (in_array($key, $selections)) {
-                    $query = DB::table($tableName);
+                    $q = DB::table($tableName);
 
                     if ($tableName === 'citizens') {
-                        $query->where('user_id', $userId);
+                        $q->where('user_id', $userId);
                     } elseif ($tableName === 'vehicles') {
-                        $query->join('citizens', 'vehicles.citizen_id', '=', 'citizens.id')
+                        $q->join('citizens', 'vehicles.citizen_id', '=', 'citizens.id')
                             ->where('citizens.user_id', $userId)->select('vehicles.*');
                     } else {
-                        $query->join('vehicles', "$tableName.vehicle_id", '=', 'vehicles.id')
+                        $q->join('vehicles', "$tableName.vehicle_id", '=', 'vehicles.id')
                             ->join('citizens', 'vehicles.citizen_id', '=', 'citizens.id')
                             ->where('citizens.user_id', $userId)->select("$tableName.*");
                     }
-                    $this->addCsvToZip($zip, "{$key}_table.csv", $query->get());
+                    $this->addCsvToZip($zip, "{$key}_table.csv", $q->get());
                 }
             }
 
