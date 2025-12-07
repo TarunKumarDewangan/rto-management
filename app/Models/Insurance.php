@@ -12,6 +12,7 @@ class Insurance extends Model
     protected $fillable = [
         'vehicle_id',
         'company',
+        'policy_number', // <--- ADD THIS LINE
         'type',
         'actual_amount',
         'bill_amount',
@@ -23,6 +24,7 @@ class Insurance extends Model
     {
         return $this->hasMany(Payment::class);
     }
+
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class);

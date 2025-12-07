@@ -47,6 +47,7 @@ import AccountStatement from './components/AccountStatement';
 import ExpiryReports from './components/ExpiryReports';
 import BackupPage from './components/BackupPage';
 
+
 // --- 1. PRIVATE ROUTE ---
 // If user is NOT logged in, kick them to Login page
 const PrivateRoute = ({ children }) => {
@@ -89,6 +90,7 @@ function App() {
         <Route path="/citizens/:id/accounts" element={<PrivateRoute><AccountStatement /></PrivateRoute>} />
         <Route path="/reports/expiry" element={<PrivateRoute><ExpiryReports /></PrivateRoute>} />
         <Route path="/backup" element={<PrivateRoute><BackupPage /></PrivateRoute>} />
+
       </Routes>
     </BrowserRouter>
   );

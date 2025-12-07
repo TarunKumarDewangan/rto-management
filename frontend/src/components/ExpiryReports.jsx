@@ -17,19 +17,29 @@ export default function ExpiryReports() {
 
     // --- MODAL STATE ---
     const [activeModal, setActiveModal] = useState(null); // 'Tax', 'Insurance', etc.
-    const [editingId, setEditingId] = useState(null); // The ID of the document (tax_id, etc.)
+    const [editingId, setEditingId] = useState(null);
     const [editingVehicleReg, setEditingVehicleReg] = useState("");
 
-    // --- FORMS (Reused from CitizenDetails) ---
+    // --- FORMS ---
     const [taxForm, setTaxForm] = useState({ tax_mode: "", govt_fee: "", bill_amount: "", type: "", from_date: "", upto_date: "" });
-    const [insForm, setInsForm] = useState({ company: "", type: "", actual_amount: "", bill_amount: "", start_date: "", end_date: "" });
+
+    // UPDATED INS FORM
+    const [insForm, setInsForm] = useState({
+        company: "",
+        policy_number: "", // <--- ADD THIS
+        type: "",
+        actual_amount: "",
+        bill_amount: "",
+        start_date: "",
+        end_date: ""
+    });
+
     const [puccForm, setPuccForm] = useState({ pucc_number: "", actual_amount: "", bill_amount: "", valid_from: "", valid_until: "" });
     const [fitForm, setFitForm] = useState({ fitness_no: "", actual_amount: "", bill_amount: "", valid_from: "", valid_until: "" });
     const [vltdForm, setVltdForm] = useState({ vendor_name: "", actual_amount: "", bill_amount: "", valid_from: "", valid_until: "" });
     const [permitForm, setPermitForm] = useState({ permit_number: "", permit_type: "", actual_amount: "", bill_amount: "", valid_from: "", valid_until: "" });
     const [spdForm, setSpdForm] = useState({ governor_number: "", actual_amount: "", bill_amount: "", valid_from: "", valid_until: "" });
 
-    // Options
     const taxModes = ["MTT", "QTT", "HYT", "YTT", "LTT"];
     const insTypes = ["1st Party", "3rd Party"];
 
@@ -48,12 +58,10 @@ export default function ExpiryReports() {
 
     // --- OPEN MODAL HANDLER ---
     const handleOpenEdit = (record) => {
-        setEditingId(record.doc_id); // This comes from our backend change
+        setEditingId(record.doc_id);
         setEditingVehicleReg(record.registration_no);
         setActiveModal(record.doc_type);
 
-        // Pre-fill dates from report (Other fields will be blank as we don't fetch full details in report)
-        // User is likely renewing, so blank fields are fine, or they fill them.
         if(record.doc_type === 'Tax') setTaxForm({ ...taxForm, upto_date: record.expiry_date.split(' ')[0] });
         if(record.doc_type === 'Insurance') setInsForm({ ...insForm, end_date: record.expiry_date.split(' ')[0] });
         if(record.doc_type === 'PUCC') setPuccForm({ ...puccForm, valid_until: record.expiry_date.split(' ')[0] });
@@ -70,13 +78,12 @@ export default function ExpiryReports() {
             await api.put(endpoint, payload);
             toast.success("Document Updated Successfully!");
             setActiveModal(null);
-            fetchReport(data?.current_page || 1); // Refresh list
+            fetchReport(data?.current_page || 1);
         } catch (error) {
             toast.error("Update failed.");
         }
     };
 
-    // --- RENDER HELPERS ---
     const handleFilterChange = (e) => setFilters({ ...filters, [e.target.name]: e.target.value });
     const handleSearch = (e) => { e.preventDefault(); fetchReport(1); };
     const handleReset = () => { setFilters({ owner_name: '', vehicle_no: '', doc_type: '', expiry_from: '', expiry_upto: '', citizen_id: '' }); };
@@ -96,7 +103,6 @@ export default function ExpiryReports() {
             <div className="container mt-4 pb-5">
                 <h3 className="text-primary fw-bold mb-4">{urlCitizenId ? "Expiry Report (Single Citizen)" : "Expiry Reports (All)"}</h3>
 
-                {/* FILTERS */}
                 <div className="card border-0 shadow-sm mb-4">
                     <div className="card-header bg-white fw-bold">Filter Records</div>
                     <div className="card-body">
@@ -113,7 +119,6 @@ export default function ExpiryReports() {
                     </div>
                 </div>
 
-                {/* TABLE */}
                 <div className="card border-0 shadow-sm">
                     <div className="card-body p-0">
                         <div className="table-responsive">
@@ -144,7 +149,6 @@ export default function ExpiryReports() {
                             </table>
                         </div>
                     </div>
-                    {/* PAGINATION */}
                     {data && data.last_page > 1 && (
                         <div className="card-footer bg-white d-flex justify-content-end py-3"><nav><ul className="pagination mb-0"><li className={`page-item ${data.current_page === 1 ? 'disabled' : ''}`}><button className="page-link" onClick={() => fetchReport(data.current_page - 1)}>Prev</button></li><li className="page-item active"><span className="page-link">Page {data.current_page} of {data.last_page}</span></li><li className={`page-item ${data.current_page === data.last_page ? 'disabled' : ''}`}><button className="page-link" onClick={() => fetchReport(data.current_page + 1)}>Next</button></li></ul></nav></div>
                     )}
@@ -169,10 +173,15 @@ export default function ExpiryReports() {
                                     </form>
                                 )}
 
-                                {/* INSURANCE FORM */}
+                                {/* INSURANCE FORM (UPDATED) */}
                                 {activeModal === 'Insurance' && (
                                     <form onSubmit={(e) => handleUpdate(e, `/api/insurances/${editingId}`, insForm)}>
-                                        <div className="row g-2 mb-2"><div className="col-md-6"><input type="text" className="form-control" placeholder="Company" value={insForm.company} onChange={(e)=>setInsForm({...insForm,company:e.target.value.toUpperCase()})}/></div><div className="col-md-6"><select className="form-select" value={insForm.type} onChange={(e)=>setInsForm({...insForm,type:e.target.value})}><option value="">Type</option>{insTypes.map(t=><option key={t} value={t}>{t}</option>)}</select></div></div><div className="row g-2 mb-2"><div className="col-md-6"><input type="number" className="form-control" placeholder="Actual" value={insForm.actual_amount} onChange={(e)=>setInsForm({...insForm,actual_amount:e.target.value})}/></div><div className="col-md-6"><input type="number" className="form-control" placeholder="Bill" value={insForm.bill_amount} onChange={(e)=>setInsForm({...insForm,bill_amount:e.target.value})}/></div></div><div className="row g-2 mb-3"><div className="col-md-6"><label className="small text-muted">Start</label><input type="date" className="form-control" value={insForm.start_date} onChange={(e)=>setInsForm({...insForm,start_date:e.target.value})}/></div><div className="col-md-6"><label className="small text-muted">End</label><input type="date" className="form-control" value={insForm.end_date} onChange={(e)=>setInsForm({...insForm,end_date:e.target.value})} required/></div></div><button className="btn btn-primary w-100">Update Insurance</button>
+                                        <div className="row g-2 mb-2">
+                                            <div className="col-md-6"><input type="text" className="form-control" placeholder="Company" value={insForm.company} onChange={(e)=>setInsForm({...insForm,company:e.target.value.toUpperCase()})}/></div>
+                                            {/* POLICY NO INPUT ADDED */}
+                                            <div className="col-md-6"><input type="text" className="form-control" placeholder="Policy No" value={insForm.policy_number} onChange={(e)=>setInsForm({...insForm,policy_number:e.target.value.toUpperCase()})}/></div>
+                                        </div>
+                                        <div className="row g-2 mb-2"><div className="col-md-4"><select className="form-select" value={insForm.type} onChange={(e)=>setInsForm({...insForm,type:e.target.value})}><option value="">Type</option>{insTypes.map(t=><option key={t} value={t}>{t}</option>)}</select></div><div className="col-md-4"><input type="number" className="form-control" placeholder="Actual" value={insForm.actual_amount} onChange={(e)=>setInsForm({...insForm,actual_amount:e.target.value})}/></div><div className="col-md-4"><input type="number" className="form-control" placeholder="Bill" value={insForm.bill_amount} onChange={(e)=>setInsForm({...insForm,bill_amount:e.target.value})}/></div></div><div className="row g-2 mb-3"><div className="col-md-6"><label className="small text-muted">Start</label><input type="date" className="form-control" value={insForm.start_date} onChange={(e)=>setInsForm({...insForm,start_date:e.target.value})}/></div><div className="col-md-6"><label className="small text-muted">End</label><input type="date" className="form-control" value={insForm.end_date} onChange={(e)=>setInsForm({...insForm,end_date:e.target.value})} required/></div></div><button className="btn btn-primary w-100">Update Insurance</button>
                                     </form>
                                 )}
 

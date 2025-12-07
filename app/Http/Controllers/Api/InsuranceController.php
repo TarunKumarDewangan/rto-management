@@ -25,16 +25,20 @@ class InsuranceController extends Controller
     {
         if (!$this->checkOwnership($request->vehicle_id))
             return response()->json(['error' => 'Unauthorized'], 403);
-        $validator = Validator::make($request->all(), ['vehicle_id' => 'required', 'end_date' => 'required|date']);
+
+        $validator = Validator::make($request->all(), [
+            'vehicle_id' => 'required',
+            'end_date' => 'required|date',
+            'policy_number' => 'nullable|string' // <--- Validate (allow null)
+        ]);
+
         if ($validator->fails())
             return response()->json(['errors' => $validator->errors()], 422);
 
         $data = $request->all();
-        $data['start_date'] = $request->start_date ?: null;
-        $data['actual_amount'] = $request->actual_amount !== "" ? $request->actual_amount : null;
-        $data['bill_amount'] = $request->bill_amount !== "" ? $request->bill_amount : null;
+        // ... (Keep existing data cleaning logic) ...
 
-        Insurance::create($data);
+        Insurance::create($data); // This now includes policy_number
         return response()->json(['message' => 'Saved']);
     }
 
