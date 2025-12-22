@@ -17,7 +17,10 @@ use App\Http\Controllers\Api\PermitController;
 use App\Http\Controllers\Api\SpeedGovernorController;
 use App\Http\Controllers\Api\BackupController;
 use App\Http\Controllers\Api\GlobalSearchController;
-
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+use App\Http\Controllers\Api\QuickEntryController;
+use App\Http\Controllers\Api\LicenseController;
 // Import Service
 use App\Services\WhatsAppService;
 
@@ -94,6 +97,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/vehicles/{id}', [VehicleController::class, 'update']);
     Route::delete('/vehicles/{id}', [VehicleController::class, 'destroy']);
     Route::post('/reports/send-notification', [App\Http\Controllers\Api\ExpiryReportController::class, 'sendNotification']);
+    Route::post('/quick-entry', [App\Http\Controllers\Api\QuickEntryController::class, 'store']);
+
+    // License Flow Routes
+    Route::get('/licenses', [App\Http\Controllers\Api\LicenseController::class, 'index']);
+    Route::post('/licenses', [App\Http\Controllers\Api\LicenseController::class, 'store']);
+    Route::put('/licenses/{id}', [App\Http\Controllers\Api\LicenseController::class, 'update']);
+    Route::delete('/licenses/{id}', [App\Http\Controllers\Api\LicenseController::class, 'destroy']);
 
 
 

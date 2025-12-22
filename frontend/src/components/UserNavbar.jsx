@@ -80,6 +80,16 @@ export default function UserNavbar() {
                         <li className="nav-item"><Link className={`nav-link ${isActive('/reports/expiry')}`} to="/reports/expiry" onClick={()=>setIsOpen(false)}>Expiry Reports</Link></li>
 
                         <li className="nav-item"><Link className={`nav-link ${isActive('/backup')}`} to="/backup" onClick={()=>setIsOpen(false)}>Backup</Link></li>
+                        <li className="nav-item">
+    <Link className={`nav-link ${isActive('/quick-entry')}`} to="/quick-entry" onClick={()=>setIsOpen(false)}>
+        Quick Entry
+    </Link>
+</li>
+<li className="nav-item">
+    <Link className={`nav-link ${isActive('/license-registry')}`} to="/license-registry" onClick={()=>setIsOpen(false)}>
+        LL/DL Registry
+    </Link>
+</li>
                     </ul>
 
                     {/* --- SEARCH BAR --- */}

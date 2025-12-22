@@ -46,6 +46,8 @@ import CitizenDetails from './components/CitizenDetails';
 import AccountStatement from './components/AccountStatement';
 import ExpiryReports from './components/ExpiryReports';
 import BackupPage from './components/BackupPage';
+import QuickEntry from './components/QuickEntry';
+import LicenseFlow from './components/LicenseFlow'; // <--- Import
 
 
 // --- 1. PRIVATE ROUTE ---
@@ -90,6 +92,8 @@ function App() {
         <Route path="/citizens/:id/accounts" element={<PrivateRoute><AccountStatement /></PrivateRoute>} />
         <Route path="/reports/expiry" element={<PrivateRoute><ExpiryReports /></PrivateRoute>} />
         <Route path="/backup" element={<PrivateRoute><BackupPage /></PrivateRoute>} />
+        <Route path="/quick-entry" element={<PrivateRoute><QuickEntry /></PrivateRoute>} />
+        <Route path="/license-registry" element={<PrivateRoute><LicenseFlow /></PrivateRoute>} />
 
       </Routes>
     </BrowserRouter>
