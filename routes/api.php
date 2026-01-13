@@ -104,6 +104,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/licenses', [App\Http\Controllers\Api\LicenseController::class, 'store']);
     Route::put('/licenses/{id}', [App\Http\Controllers\Api\LicenseController::class, 'update']);
     Route::delete('/licenses/{id}', [App\Http\Controllers\Api\LicenseController::class, 'destroy']);
+    Route::post('/licenses/send-whatsapp', [App\Http\Controllers\Api\LicenseController::class, 'sendWhatsApp']);
 
 
 

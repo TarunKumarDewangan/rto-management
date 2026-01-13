@@ -55,7 +55,6 @@ export default function CitizenDetails() {
 
   const [taxForm, setTaxForm] = useState({ tax_mode: "", govt_fee: "", bill_amount: "", type: "", from_date: "", upto_date: "" });
 
-  // UPDATED INS FORM WITH POLICY NUMBER
   const [insForm, setInsForm] = useState({
       company: "",
       policy_number: "",
@@ -102,7 +101,7 @@ export default function CitizenDetails() {
   useEffect(() => { fetchCitizen(); }, [id]);
 
   // ===========================
-  //      HANDLERS
+  //      HANDLERS (VEHICLE)
   // ===========================
 
   const handleSaveVehicle = async (e) => {
@@ -150,74 +149,109 @@ export default function CitizenDetails() {
     }
   };
 
-  // --- DOCUMENT HANDLERS ---
+  // ===========================
+  //      DOCUMENT HANDLERS (UPDATED TO CLOSE MODALS)
+  // ===========================
+
+  // 1. TAX
   const openTaxModal = (v) => { setSelectedVehicle(v); setTaxForm({ tax_mode: "", govt_fee: "", bill_amount: "", type: v.type || "", from_date: "", upto_date: "" }); setIsEditingTax(null); fetchTaxes(v.id); setShowTaxModal(true); };
-  const handleSaveTax = async (e) => { e.preventDefault(); try { if(isEditingTax) { await api.put(`/api/taxes/${isEditingTax}`, taxForm); toast.success("Updated!"); } else { await api.post("/api/taxes", { ...taxForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); } fetchTaxes(selectedVehicle.id); fetchCitizen(); setTaxForm({ ...taxForm, upto_date: "", from_date: "" }); setIsEditingTax(null); } catch (e) { toast.error("Error saving."); } };
+  const handleSaveTax = async (e) => {
+      e.preventDefault();
+      try {
+          if(isEditingTax) { await api.put(`/api/taxes/${isEditingTax}`, taxForm); toast.success("Updated!"); }
+          else { await api.post("/api/taxes", { ...taxForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); }
+          fetchTaxes(selectedVehicle.id); fetchCitizen(); setTaxForm({ ...taxForm, upto_date: "", from_date: "" }); setIsEditingTax(null);
+          setShowTaxModal(false); // <--- CLOSED
+      } catch (e) { toast.error("Error saving."); }
+  };
   const handleEditTax = (row) => { setTaxForm({ tax_mode: row.tax_mode, govt_fee: row.govt_fee || "", bill_amount: row.bill_amount || "", type: row.type || "", from_date: row.from_date || "", upto_date: row.upto_date }); setIsEditingTax(row.id); };
   const handleDeleteTax = async (id) => { if(!confirm("Delete?")) return; try { await api.delete(`/api/taxes/${id}`); toast.success("Deleted"); fetchTaxes(selectedVehicle.id); fetchCitizen(); } catch(e) { toast.error("Error."); } };
 
-  // --- INSURANCE HANDLERS UPDATED ---
+  // 2. INSURANCE
   const openInsModal = (v) => { setSelectedVehicle(v); setInsForm({ company: "", policy_number: "", type: "", actual_amount: "", bill_amount: "", start_date: "", end_date: "" }); setIsEditingIns(null); fetchInsurances(v.id); setShowInsModal(true); };
-
   const handleSaveIns = async (e) => {
       e.preventDefault();
       try {
-          if(isEditingIns) {
-              await api.put(`/api/insurances/${isEditingIns}`, insForm);
-              toast.success("Updated!");
-          } else {
-              await api.post("/api/insurances", { ...insForm, vehicle_id: selectedVehicle.id });
-              toast.success("Saved!");
-          }
-          fetchInsurances(selectedVehicle.id);
-          fetchCitizen();
-          setInsForm({ ...insForm, end_date: "", start_date: "", policy_number: "" });
-          setIsEditingIns(null);
-      } catch (e) {
-          toast.error("Error saving.");
-      }
+          if(isEditingIns) { await api.put(`/api/insurances/${isEditingIns}`, insForm); toast.success("Updated!"); }
+          else { await api.post("/api/insurances", { ...insForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); }
+          fetchInsurances(selectedVehicle.id); fetchCitizen(); setInsForm({ ...insForm, end_date: "", start_date: "", policy_number: "" }); setIsEditingIns(null);
+          setShowInsModal(false); // <--- CLOSED
+      } catch (e) { toast.error("Error saving."); }
   };
-
-  const handleEditIns = (row) => {
-    setInsForm({
-        company: row.company||"",
-        policy_number: row.policy_number||"",
-        type: row.type||"",
-        actual_amount: row.actual_amount||"",
-        bill_amount: row.bill_amount||"",
-        start_date: row.start_date||"",
-        end_date: row.end_date
-    });
-    setIsEditingIns(row.id);
-  };
-
+  const handleEditIns = (row) => { setInsForm({ company: row.company||"", policy_number: row.policy_number||"", type: row.type||"", actual_amount: row.actual_amount||"", bill_amount: row.bill_amount||"", start_date: row.start_date||"", end_date: row.end_date }); setIsEditingIns(row.id); };
   const handleDeleteIns = async (id) => { if(!confirm("Delete?")) return; try { await api.delete(`/api/insurances/${id}`); toast.success("Deleted"); fetchInsurances(selectedVehicle.id); fetchCitizen(); } catch(e) { toast.error("Error."); } };
 
+  // 3. PUCC
   const openPuccModal = (v) => { setSelectedVehicle(v); setPuccForm({ pucc_number: "", actual_amount: "", bill_amount: "", valid_from: "", valid_until: "" }); setIsEditingPucc(null); fetchPuccs(v.id); setShowPuccModal(true); };
-  const handleSavePucc = async (e) => { e.preventDefault(); try { if(isEditingPucc) { await api.put(`/api/puccs/${isEditingPucc}`, puccForm); toast.success("Updated!"); } else { await api.post("/api/puccs", { ...puccForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); } fetchPuccs(selectedVehicle.id); fetchCitizen(); setPuccForm({ ...puccForm, valid_until: "", valid_from: "" }); setIsEditingPucc(null); } catch (e) { toast.error("Error saving."); } };
+  const handleSavePucc = async (e) => {
+      e.preventDefault();
+      try {
+          if(isEditingPucc) { await api.put(`/api/puccs/${isEditingPucc}`, puccForm); toast.success("Updated!"); }
+          else { await api.post("/api/puccs", { ...puccForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); }
+          fetchPuccs(selectedVehicle.id); fetchCitizen(); setPuccForm({ ...puccForm, valid_until: "", valid_from: "" }); setIsEditingPucc(null);
+          setShowPuccModal(false); // <--- CLOSED
+      } catch (e) { toast.error("Error saving."); }
+  };
   const handleEditPucc = (row) => { setPuccForm({ pucc_number: row.pucc_number||"", actual_amount: row.actual_amount||"", bill_amount: row.bill_amount||"", valid_from: row.valid_from||"", valid_until: row.valid_until }); setIsEditingPucc(row.id); };
   const handleDeletePucc = async (id) => { if(!confirm("Delete?")) return; try { await api.delete(`/api/puccs/${id}`); toast.success("Deleted"); fetchPuccs(selectedVehicle.id); fetchCitizen(); } catch(e) {} };
 
+  // 4. FITNESS
   const openFitModal = (v) => { setSelectedVehicle(v); setFitForm({ fitness_no: "", actual_amount: "", bill_amount: "", valid_from: "", valid_until: "" }); setIsEditingFit(null); fetchFitness(v.id); setShowFitModal(true); };
-  const handleSaveFit = async (e) => { e.preventDefault(); try { if(isEditingFit) { await api.put(`/api/fitness/${isEditingFit}`, fitForm); toast.success("Updated!"); } else { await api.post("/api/fitness", { ...fitForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); } fetchFitness(selectedVehicle.id); fetchCitizen(); setFitForm({ ...fitForm, valid_until: "", valid_from: "" }); setIsEditingFit(null); } catch (e) { toast.error("Error saving."); } };
+  const handleSaveFit = async (e) => {
+      e.preventDefault();
+      try {
+          if(isEditingFit) { await api.put(`/api/fitness/${isEditingFit}`, fitForm); toast.success("Updated!"); }
+          else { await api.post("/api/fitness", { ...fitForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); }
+          fetchFitness(selectedVehicle.id); fetchCitizen(); setFitForm({ ...fitForm, valid_until: "", valid_from: "" }); setIsEditingFit(null);
+          setShowFitModal(false); // <--- CLOSED
+      } catch (e) { toast.error("Error saving."); }
+  };
   const handleEditFit = (row) => { setFitForm({ fitness_no: row.fitness_no||"", actual_amount: row.actual_amount||"", bill_amount: row.bill_amount||"", valid_from: row.valid_from||"", valid_until: row.valid_until }); setIsEditingFit(row.id); };
   const handleDeleteFit = async (id) => { if(!confirm("Delete?")) return; try { await api.delete(`/api/fitness/${id}`); toast.success("Deleted"); fetchFitness(selectedVehicle.id); fetchCitizen(); } catch(e) {} };
 
+  // 5. VLTD
   const openVltdModal = (v) => { setSelectedVehicle(v); setVltdForm({ vendor_name: "", actual_amount: "", bill_amount: "", valid_from: "", valid_until: "" }); setIsEditingVltd(null); fetchVltds(v.id); setShowVltdModal(true); };
-  const handleSaveVltd = async (e) => { e.preventDefault(); try { if(isEditingVltd) { await api.put(`/api/vltds/${isEditingVltd}`, vltdForm); toast.success("Updated!"); } else { await api.post("/api/vltds", { ...vltdForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); } fetchVltds(selectedVehicle.id); fetchCitizen(); setVltdForm({ ...vltdForm, valid_until: "", valid_from: "" }); setIsEditingVltd(null); } catch (e) { toast.error("Error saving."); } };
+  const handleSaveVltd = async (e) => {
+      e.preventDefault();
+      try {
+          if(isEditingVltd) { await api.put(`/api/vltds/${isEditingVltd}`, vltdForm); toast.success("Updated!"); }
+          else { await api.post("/api/vltds", { ...vltdForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); }
+          fetchVltds(selectedVehicle.id); fetchCitizen(); setVltdForm({ ...vltdForm, valid_until: "", valid_from: "" }); setIsEditingVltd(null);
+          setShowVltdModal(false); // <--- CLOSED
+      } catch (e) { toast.error("Error saving."); }
+  };
   const handleEditVltd = (row) => { setVltdForm({ vendor_name: row.vendor_name||"", actual_amount: row.actual_amount||"", bill_amount: row.bill_amount||"", valid_from: row.valid_from||"", valid_until: row.valid_until }); setIsEditingVltd(row.id); };
   const handleDeleteVltd = async (id) => { if(!confirm("Delete?")) return; try { await api.delete(`/api/vltds/${id}`); toast.success("Deleted"); fetchVltds(selectedVehicle.id); fetchCitizen(); } catch(e) {} };
 
+  // 6. PERMIT
   const openPermitModal = (v) => { setSelectedVehicle(v); setPermitForm({ permit_number: "", permit_type: "", actual_amount: "", bill_amount: "", valid_from: "", valid_until: "" }); setIsEditingPermit(null); fetchPermits(v.id); setShowPermitModal(true); };
-  const handleSavePermit = async (e) => { e.preventDefault(); try { if(isEditingPermit) { await api.put(`/api/permits/${isEditingPermit}`, permitForm); toast.success("Updated!"); } else { await api.post("/api/permits", { ...permitForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); } fetchPermits(selectedVehicle.id); fetchCitizen(); setPermitForm({ ...permitForm, valid_until: "", valid_from: "" }); setIsEditingPermit(null); } catch (e) { toast.error("Error"); } };
+  const handleSavePermit = async (e) => {
+      e.preventDefault();
+      try {
+          if(isEditingPermit) { await api.put(`/api/permits/${isEditingPermit}`, permitForm); toast.success("Updated!"); }
+          else { await api.post("/api/permits", { ...permitForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); }
+          fetchPermits(selectedVehicle.id); fetchCitizen(); setPermitForm({ ...permitForm, valid_until: "", valid_from: "" }); setIsEditingPermit(null);
+          setShowPermitModal(false); // <--- CLOSED
+      } catch (e) { toast.error("Error"); }
+  };
   const handleEditPermit = (row) => { setPermitForm({ permit_number: row.permit_number||"", permit_type: row.permit_type||"", actual_amount: row.actual_amount||"", bill_amount: row.bill_amount||"", valid_from: row.valid_from||"", valid_until: row.valid_until }); setIsEditingPermit(row.id); };
   const handleDeletePermit = async (id) => { if(!confirm("Delete?")) return; try { await api.delete(`/api/permits/${id}`); toast.success("Deleted"); fetchPermits(selectedVehicle.id); fetchCitizen(); } catch(e) {} };
 
+  // 7. SPEED GOV
   const openSpdModal = (v) => { setSelectedVehicle(v); setSpdForm({ governor_number: "", actual_amount: "", bill_amount: "", valid_from: "", valid_until: "" }); setIsEditingSpd(null); fetchSpds(v.id); setShowSpdModal(true); };
-  const handleSaveSpd = async (e) => { e.preventDefault(); try { if(isEditingSpd) { await api.put(`/api/speed-governors/${isEditingSpd}`, spdForm); toast.success("Updated!"); } else { await api.post("/api/speed-governors", { ...spdForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); } fetchSpds(selectedVehicle.id); fetchCitizen(); setSpdForm({ ...spdForm, valid_until: "", valid_from: "" }); setIsEditingSpd(null); } catch (e) { toast.error("Error"); } };
+  const handleSaveSpd = async (e) => {
+      e.preventDefault();
+      try {
+          if(isEditingSpd) { await api.put(`/api/speed-governors/${isEditingSpd}`, spdForm); toast.success("Updated!"); }
+          else { await api.post("/api/speed-governors", { ...spdForm, vehicle_id: selectedVehicle.id }); toast.success("Saved!"); }
+          fetchSpds(selectedVehicle.id); fetchCitizen(); setSpdForm({ ...spdForm, valid_until: "", valid_from: "" }); setIsEditingSpd(null);
+          setShowSpdModal(false); // <--- CLOSED
+      } catch (e) { toast.error("Error"); }
+  };
   const handleEditSpd = (row) => { setSpdForm({ governor_number: row.governor_number||"", actual_amount: row.actual_amount||"", bill_amount: row.bill_amount||"", valid_from: row.valid_from||"", valid_until: row.valid_until }); setIsEditingSpd(row.id); };
   const handleDeleteSpd = async (id) => { if(!confirm("Delete?")) return; try { await api.delete(`/api/speed-governors/${id}`); toast.success("Deleted"); fetchSpds(selectedVehicle.id); fetchCitizen(); } catch(e) {} };
 
+  // 8. PAYMENT
   const openPayModal = (record, type) => { setSelectedRecord(record); setPaymentType(type); const paid = record.payments.reduce((sum, p) => sum + Number(p.amount), 0); const balance = Number(record.bill_amount || 0) - paid; setPaymentForm({ amount: balance > 0 ? balance : "", payment_date: new Date().toISOString().split('T')[0], remarks: "" }); setShowPayModal(true); };
   const handleSavePayment = async (e) => { e.preventDefault(); const payload = { ...paymentForm }; if(paymentType === 'tax') payload.tax_id = selectedRecord.id; if(paymentType === 'insurance') payload.insurance_id = selectedRecord.id; if(paymentType === 'pucc') payload.pucc_id = selectedRecord.id; if(paymentType === 'fitness') payload.fitness_id = selectedRecord.id; if(paymentType === 'vltd') payload.vltd_id = selectedRecord.id; if(paymentType === 'permit') payload.permit_id = selectedRecord.id; if(paymentType === 'spd') payload.speed_governor_id = selectedRecord.id; try { await api.post("/api/payments", payload); toast.success("Payment Successful!"); setShowPayModal(false); if(paymentType === 'tax') fetchTaxes(selectedVehicle.id); if(paymentType === 'insurance') fetchInsurances(selectedVehicle.id); if(paymentType === 'pucc') fetchPuccs(selectedVehicle.id); if(paymentType === 'fitness') fetchFitness(selectedVehicle.id); if(paymentType === 'vltd') fetchVltds(selectedVehicle.id); if(paymentType === 'permit') fetchPermits(selectedVehicle.id); if(paymentType === 'spd') fetchSpds(selectedVehicle.id); } catch (e) { toast.error("Payment Error."); } };
 
@@ -254,11 +288,11 @@ export default function CitizenDetails() {
                             <tr>
                                 <th style={{width: '50px'}}>#</th>
                                 <th>Registration</th>
-                                <th style={{minWidth: '600px'}}>Validities & Actions</th> {/* Moved to start */}
-                                <th>Type</th>       {/* Moved to end */}
-                                <th>Make/Model</th> {/* Moved to end */}
-                                <th>Chassis</th>    {/* Moved to end */}
-                                <th>Engine</th>     {/* Moved to end */}
+                                <th style={{minWidth: '600px'}}>Validities & Actions</th>
+                                <th>Type</th>
+                                <th>Make/Model</th>
+                                <th>Chassis</th>
+                                <th>Engine</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -268,7 +302,7 @@ export default function CitizenDetails() {
                                         <td className="text-center text-muted">{index + 1}</td>
                                         <td className="fw-bold text-primary">{vehicle.registration_no}</td>
 
-                                        {/* ACTION COLUMN (With Bigger Buttons & Dates) */}
+                                        {/* ACTION COLUMN */}
                                         <td>
                                             <div className="d-flex flex-wrap gap-2 align-items-start">
                                                 <div className="text-center"><button onClick={() => openTaxModal(vehicle)} className="btn btn-sm btn-outline-dark px-2 py-0 fw-semibold mb-1" style={{fontSize:'13.5px', width: '70px'}}>Tax</button><div style={{fontSize: '12px'}} className={isExpired(vehicle.latest_tax?.upto_date) ? "text-danger fw-bold" : "text-muted"}>{formatDate(vehicle.latest_tax?.upto_date)}</div></div>
@@ -286,7 +320,7 @@ export default function CitizenDetails() {
                                             </div>
                                         </td>
 
-                                        {/* TECHNICAL DETAILS (Moved to End) */}
+                                        {/* TECHNICAL DETAILS */}
                                         <td>{vehicle.type || '-'}</td>
                                         <td>{vehicle.make_model || '-'}</td>
                                         <td>{vehicle.chassis_no || '-'}</td>

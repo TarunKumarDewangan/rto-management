@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Citizen;
 use App\Models\Vehicle;
 use App\Models\Pucc;
+use App\Models\Insurance; // <--- Import Insurance
 
 class QuickEntryController extends Controller
 {
@@ -18,52 +19,32 @@ class QuickEntryController extends Controller
             'mobile_number' => 'required',
             'registration_no' => 'required',
             'valid_until' => 'required|date',
+            'mode' => 'required|in:PUCC,INSURANCE' // <--- Validate Mode
         ]);
 
-        // 1. Get Logged in User ID
         $ownerId = $request->user()->id;
-
-        // Clean Inputs
         $mobile = trim($request->mobile_number);
         $regNo = strtoupper(str_replace(' ', '', trim($request->registration_no)));
         $name = strtoupper(trim($request->name));
 
         DB::beginTransaction();
         try {
-            // --- 2. Find or Create Citizen (For THIS User) ---
-            $citizen = Citizen::where('mobile_number', $mobile)
-                ->where('user_id', $ownerId)
-                ->first();
-
+            // 1. Citizen Logic (Same)
+            $citizen = Citizen::where('mobile_number', $mobile)->where('user_id', $ownerId)->first();
             if (!$citizen) {
-                $citizen = Citizen::create([
-                    'user_id' => $ownerId,
-                    'name' => $name,
-                    'mobile_number' => $mobile,
-                ]);
+                $citizen = Citizen::create(['user_id' => $ownerId, 'name' => $name, 'mobile_number' => $mobile]);
             } else {
-                // Update name if they fixed a typo
                 $citizen->update(['name' => $name]);
             }
 
-            // --- 3. Find or Create Vehicle (For THIS Citizen/User) ---
-            // We search for vehicles belonging to this specific citizen
-            // OR vehicles belonging to this User (in case they are moving ownership, though rare)
-
+            // 2. Vehicle Logic (Same)
             $vehicle = Vehicle::where('registration_no', $regNo)
-                ->whereHas('citizen', function ($q) use ($ownerId) {
-                    $q->where('user_id', $ownerId);
-                })
+                ->whereHas('citizen', fn($q) => $q->where('user_id', $ownerId))
                 ->first();
 
             if ($vehicle) {
-                // Vehicle Exists: Ensure it links to this citizen and update type
-                $vehicle->update([
-                    'citizen_id' => $citizen->id,
-                    'type' => $request->type ?? $vehicle->type
-                ]);
+                $vehicle->update(['citizen_id' => $citizen->id, 'type' => $request->type ?? $vehicle->type]);
             } else {
-                // Create New Vehicle
                 $vehicle = Vehicle::create([
                     'citizen_id' => $citizen->id,
                     'registration_no' => $regNo,
@@ -72,18 +53,30 @@ class QuickEntryController extends Controller
                 ]);
             }
 
-            // --- 4. Create PUCC Entry ---
-            Pucc::create([
-                'vehicle_id' => $vehicle->id,
-                'valid_from' => $request->valid_from,
-                'valid_until' => $request->valid_until,
-                'pucc_number' => null,
-                'bill_amount' => 0,
-                'actual_amount' => 0
-            ]);
+            // 3. Insert Document based on Mode
+            if ($request->mode === 'PUCC') {
+                Pucc::create([
+                    'vehicle_id' => $vehicle->id,
+                    'valid_from' => $request->valid_from,
+                    'valid_until' => $request->valid_until,
+                    'pucc_number' => null,
+                    'bill_amount' => 0,
+                    'actual_amount' => 0
+                ]);
+            } elseif ($request->mode === 'INSURANCE') {
+                Insurance::create([
+                    'vehicle_id' => $vehicle->id,
+                    'start_date' => $request->valid_from, // Mapped to start_date
+                    'end_date' => $request->valid_until,   // Mapped to end_date
+                    'company' => $request->company,
+                    'policy_number' => $request->policy_number,
+                    'bill_amount' => 0,
+                    'actual_amount' => 0
+                ]);
+            }
 
             DB::commit();
-            return response()->json(['message' => 'Entry Saved & Linked Successfully!']);
+            return response()->json(['message' => 'Entry Saved Successfully!']);
 
         } catch (\Exception $e) {
             DB::rollBack();

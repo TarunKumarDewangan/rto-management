@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import api from "../api"; // <--- USE CENTRAL API CONFIG
+import api from "../api";
 
 export default function UserNavbar() {
     const navigate = useNavigate();
@@ -16,7 +16,6 @@ export default function UserNavbar() {
     // --- MOBILE MENU STATE ---
     const [isOpen, setIsOpen] = useState(false);
 
-    // Logout
     const logout = () => {
         localStorage.clear();
         navigate('/');
@@ -24,12 +23,17 @@ export default function UserNavbar() {
 
     const isActive = (path) => location.pathname === path ? 'active fw-bold text-primary' : 'text-secondary';
 
+    // --- HELPER TO TRUNCATE NAME ---
+    const getDisplayName = (name) => {
+        if (!name) return "User";
+        return name.length > 10 ? name.substring(0, 10) + "..." : name;
+    };
+
     // --- SEARCH FUNCTION ---
     useEffect(() => {
         const delayDebounceFn = setTimeout(async () => {
             if (query.length > 1) {
                 try {
-                    // Using central API instance (No hardcoded URL)
                     const res = await api.get(`/api/global-search?query=${query}`);
                     setResults(res.data);
                     setShowDropdown(true);
@@ -78,18 +82,9 @@ export default function UserNavbar() {
                         <li className="nav-item"><Link className={`nav-link ${isActive('/dashboard')}`} to="/dashboard" onClick={()=>setIsOpen(false)}>Dashboard</Link></li>
                         <li className="nav-item"><Link className={`nav-link ${isActive('/citizens')}`} to="/citizens" onClick={()=>setIsOpen(false)}>Citizens</Link></li>
                         <li className="nav-item"><Link className={`nav-link ${isActive('/reports/expiry')}`} to="/reports/expiry" onClick={()=>setIsOpen(false)}>Expiry Reports</Link></li>
-
                         <li className="nav-item"><Link className={`nav-link ${isActive('/backup')}`} to="/backup" onClick={()=>setIsOpen(false)}>Backup</Link></li>
-                        <li className="nav-item">
-    <Link className={`nav-link ${isActive('/quick-entry')}`} to="/quick-entry" onClick={()=>setIsOpen(false)}>
-        Quick Entry
-    </Link>
-</li>
-<li className="nav-item">
-    <Link className={`nav-link ${isActive('/license-registry')}`} to="/license-registry" onClick={()=>setIsOpen(false)}>
-        LL/DL Registry
-    </Link>
-</li>
+                        <li className="nav-item"><Link className={`nav-link ${isActive('/quick-entry')}`} to="/quick-entry" onClick={()=>setIsOpen(false)}>Quick Entry</Link></li>
+                        <li className="nav-item"><Link className={`nav-link ${isActive('/license-registry')}`} to="/license-registry" onClick={()=>setIsOpen(false)}>LL/DL Registry</Link></li>
                     </ul>
 
                     {/* --- SEARCH BAR --- */}
@@ -139,12 +134,19 @@ export default function UserNavbar() {
 
                     <div className="d-flex align-items-center justify-content-between border-top pt-3 pt-lg-0 border-lg-0 mt-3 mt-lg-0">
                          <div className="d-flex align-items-center">
+                            {/* Avatar */}
                             <div className="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-2" style={{width:'35px', height:'35px'}}>
                                 {user?.name?.charAt(0).toUpperCase()}
                             </div>
-                            <div className="lh-1 d-none d-lg-block">
-                                <small className="text-muted d-block" style={{fontSize: '10px'}}>Signed in as</small>
-                                <span className="fw-bold text-dark small">{user?.name}</span>
+
+                            {/* User Info (Updated) */}
+                            <div className="lh-1 d-none d-lg-block text-end" style={{minWidth: '100px'}}>
+                                <small className="text-muted d-block" style={{fontSize: '10px'}}>
+                                    {user?.email} {/* Shows Email Here */}
+                                </small>
+                                <span className="fw-bold text-dark small" title={user?.name}>
+                                    {getDisplayName(user?.name)} {/* Shows Truncated Name */}
+                                </span>
                             </div>
                         </div>
                         <button onClick={logout} className="btn btn-outline-danger btn-sm ms-3">Logout</button>
