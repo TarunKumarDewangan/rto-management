@@ -31,6 +31,8 @@ Route::get('/backup/download', [BackupController::class, 'export'])->name('backu
 // Protected Routes (Require Token)
 Route::middleware('auth:sanctum')->group(function () {
 
+    Route::post('/change-password', [App\Http\Controllers\Api\AuthController::class, 'changePassword']);
+
     // ... (Your existing routes for users, citizens, etc.) ...
     Route::get('/users', [AdminUserManagementController::class, 'index']);
     Route::post('/users', [AdminUserManagementController::class, 'store']);
