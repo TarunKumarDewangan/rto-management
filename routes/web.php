@@ -19,8 +19,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// --- UTILITY ROUTE FOR HOSTINGER (Shared Hosting) ---
-// Visit https://api.rtodatahub.in/clear-cache to reset the backend
+// --- UTILITY ROUTES FOR HOSTINGER (Shared Hosting) ---
 Route::get('/clear-cache', function () {
     try {
         Artisan::call('cache:clear');
@@ -28,7 +27,21 @@ Route::get('/clear-cache', function () {
         Artisan::call('route:clear');
         Artisan::call('view:clear');
         return '<h1>Cache, Config, Route, and Views Cleared Successfully!</h1>';
-    } catch (\Exception $e) {
-        return 'Error clearing cache: ' . $e->getMessage();
-    }
+    } catch (\Exception $e) { return 'Error: ' . $e->getMessage(); }
+});
+
+Route::get('/migrate', function () {
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        return '<h1>Database Migrations Run Successfully!</h1>';
+    } catch (\Exception $e) { return 'Error: ' . $e->getMessage(); }
+});
+
+Route::get('/optimize', function () {
+    try {
+        Artisan::call('optimize:clear');
+        Artisan::call('config:cache');
+        Artisan::call('route:cache');
+        return '<h1>System Optimized & Cached!</h1>';
+    } catch (\Exception $e) { return 'Error: ' . $e->getMessage(); }
 });
