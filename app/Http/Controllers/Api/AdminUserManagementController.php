@@ -18,9 +18,16 @@ class AdminUserManagementController extends Controller
 
     public function index(Request $request)
     {
-        $this->checkAdmin($request);
-        // Get all users (Agents) ordered by latest
-        $users = User::where('role', 'user')->orderBy('created_at', 'desc')->get();
+        // Check Admin
+        if ($request->user()->role !== 'admin')
+            abort(403, 'Unauthorized');
+
+        // Fetch Users with Counts
+        $users = \App\Models\User::where('role', 'user')
+            ->withCount(['citizens', 'vehicles', 'licenses']) // <--- THE MAGIC LINE
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return response()->json($users);
     }
 

@@ -128,20 +128,54 @@ export default function AdminDashboard() {
                     <div className="card-body p-0">
                         <div className="table-responsive">
                             <table className="table table-hover mb-0 align-middle text-nowrap">
-                                <thead className="table-light"><tr><th className="ps-4">Name</th><th>Email</th><th>WhatsApp Config</th><th>Status</th><th className="text-end pe-4">Actions</th></tr></thead>
+                                <thead className="table-light">
+                                    <tr>
+                                        <th className="ps-4">Name</th>
+                                        <th>Email</th>
+                                        <th className="text-center">Citizens</th>
+                                        <th className="text-center">Vehicles</th>
+                                        <th className="text-center">LL Entries</th>
+                                        <th className="text-center">Config</th>
+                                        <th className="text-center">Status</th>
+                                        <th className="text-end pe-4">Actions</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
-                                    {loading ? (<tr><td colSpan="5" className="text-center py-5"><div className="spinner-border text-primary"></div></td></tr>) :
-                                    users.length > 0 ? (users.map(u => (
-                                        <tr key={u.id}>
-                                            <td className="ps-4 fw-bold">{u.name}</td>
-                                            <td>{u.email}</td>
-                                            <td>{u.whatsapp_key ? (<span className="badge bg-info text-dark">Configured</span>) : (<span className="badge bg-secondary">Not Set</span>)}</td>
-                                            <td><button onClick={() => toggleStatus(u.id)} className={`badge border-0 ${u.is_active ? 'bg-success' : 'bg-danger'}`} style={{cursor: 'pointer'}}>{u.is_active ? 'Active' : 'Inactive'}</button></td>
-                                            <td className="text-end pe-4">
-                                                <button onClick={() => openEditModal(u)} className="btn btn-sm btn-primary me-2"><i className="bi bi-pencil-square"></i> Edit</button>
-                                                <button onClick={() => deleteUser(u.id)} className="btn btn-sm btn-danger"><i className="bi bi-trash"></i></button>
-                                            </td>
-                                        </tr>))) : (<tr><td colSpan="5" className="text-center py-4 text-muted">No users found.</td></tr>)}
+                                    {loading ? (
+                                        <tr><td colSpan="8" className="text-center py-5"><div className="spinner-border text-primary"></div></td></tr>
+                                    ) : users.length > 0 ? (
+                                        users.map(u => (
+                                            <tr key={u.id}>
+                                                {/* TRUNCATED NAME */}
+                                                <td className="ps-4 fw-bold text-primary" title={u.name}>
+                                                    {u.name.length > 12 ? u.name.substring(0, 12) + "..." : u.name}
+                                                </td>
+                                                <td>{u.email}</td>
+
+                                                {/* COUNTS */}
+                                                <td className="text-center"><span className="badge bg-primary-subtle text-primary rounded-pill px-3">{u.citizens_count || 0}</span></td>
+                                                <td className="text-center"><span className="badge bg-info-subtle text-info-emphasis rounded-pill px-3">{u.vehicles_count || 0}</span></td>
+                                                <td className="text-center"><span className="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3">{u.licenses_count || 0}</span></td>
+
+                                                <td className="text-center">
+                                                    {u.whatsapp_key ? <span className="badge bg-success-subtle text-success border border-success"><i className="bi bi-check-lg"></i> Ready</span> : <span className="badge bg-secondary">Not Set</span>}
+                                                </td>
+
+                                                <td className="text-center">
+                                                    <button onClick={() => toggleStatus(u.id)} className={`badge border-0 ${u.is_active ? 'bg-success' : 'bg-danger'}`} style={{cursor: 'pointer'}}>
+                                                        {u.is_active ? 'Active' : 'Inactive'}
+                                                    </button>
+                                                </td>
+
+                                                <td className="text-end pe-4">
+                                                    <button onClick={() => openEditModal(u)} className="btn btn-sm btn-primary me-2"><i className="bi bi-pencil-square"></i></button>
+                                                    <button onClick={() => deleteUser(u.id)} className="btn btn-sm btn-danger"><i className="bi bi-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr><td colSpan="8" className="text-center py-4 text-muted">No users found.</td></tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

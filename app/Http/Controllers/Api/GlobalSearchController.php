@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Citizen;
+use App\Models\License; // Ensure this Model exists
+use App\Models\Dl;      // Ensure this Model exists
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -20,40 +22,33 @@ class GlobalSearchController extends Controller
                 return response()->json([]);
             }
 
-            // --- NEW LOGIC: Search Citizens Table Directly ---
+            $results = [];
+
+            // ==========================================
+            // 1. SEARCH CITIZENS (Vehicles & Docs)
+            // ==========================================
             $citizens = Citizen::where('user_id', $userId)
                 ->where(function ($q) use ($query) {
-                    // 1. Match Citizen Name or Mobile (Even if 0 vehicles)
                     $q->where('name', 'like', "%{$query}%")
                         ->orWhere('mobile_number', 'like', "%{$query}%")
-
-                        // 2. Match Vehicle Details (Reg No, Chassis, Engine)
                         ->orWhereHas('vehicles', function ($v) use ($query) {
-                        $v->where('registration_no', 'like', "%{$query}%")
-                            ->orWhere('chassis_no', 'like', "%{$query}%")
-                            ->orWhere('engine_no', 'like', "%{$query}%")
-
-                            // 3. Match Documents (Policy No, Permit No, etc.)
-                            ->orWhereHas('insurances', fn($i) => $i->where('company', 'like', "%{$query}%"))
-                            ->orWhereHas('permits', fn($p) => $p->where('permit_number', 'like', "%{$query}%"))
-                            ->orWhereHas('puccs', fn($pc) => $pc->where('pucc_number', 'like', "%{$query}%"))
-                            ->orWhereHas('speedGovernors', fn($s) => $s->where('governor_number', 'like', "%{$query}%"))
-                            ->orWhereHas('vltds', fn($vl) => $vl->where('vendor_name', 'like', "%{$query}%"));
-                    });
+                            $v->where('registration_no', 'like', "%{$query}%")
+                                ->orWhere('chassis_no', 'like', "%{$query}%")
+                                ->orWhere('engine_no', 'like', "%{$query}%")
+                                ->orWhereHas('insurances', fn($i) => $i->where('company', 'like', "%{$query}%")->orWhere('policy_number', 'like', "%{$query}%"))
+                                ->orWhereHas('permits', fn($p) => $p->where('permit_number', 'like', "%{$query}%"));
+                        });
                 })
-                ->with('vehicles') // Load vehicles to check if we matched one
-                ->limit(10)
+                ->with('vehicles')
+                ->limit(5)
                 ->get();
 
-            // --- Format Results for Frontend ---
-            $results = $citizens->map(function ($c) use ($query) {
-
-                // Default Display: Citizen Name
+            foreach ($citizens as $c) {
                 $title = $c->name;
                 $subtitle = "Mobile: " . $c->mobile_number;
                 $type = "Citizen";
 
-                // Smart Display: If the search matches a Vehicle, show that instead
+                // Smart Display: If searching for vehicle/chassis, show that instead
                 foreach ($c->vehicles as $v) {
                     if (stripos($v->registration_no ?? '', $query) !== false) {
                         $title = $v->registration_no;
@@ -69,13 +64,60 @@ class GlobalSearchController extends Controller
                     }
                 }
 
-                return [
-                    'id' => $c->id, // Navigates to /citizens/{id}
+                $results[] = [
+                    'id' => $c->id,
                     'title' => $title,
                     'subtitle' => $subtitle,
-                    'type' => $type
+                    'type' => $type,
+                    'link' => "/citizens/{$c->id}" // Frontend Route
                 ];
-            });
+            }
+
+            // ==========================================
+            // 2. SEARCH LL REGISTRY
+            // ==========================================
+            $licenses = License::where('user_id', $userId)
+                ->where(function ($q) use ($query) {
+                    $q->where('applicant_name', 'like', "%{$query}%")
+                      ->orWhere('mobile_number', 'like', "%{$query}%")
+                      ->orWhere('application_no', 'like', "%{$query}%")
+                      ->orWhere('ll_number', 'like', "%{$query}%")
+                      ->orWhere('dl_number', 'like', "%{$query}%");
+                })
+                ->limit(3)
+                ->get();
+
+            foreach ($licenses as $l) {
+                $results[] = [
+                    'id' => $l->id,
+                    'title' => $l->applicant_name,
+                    'subtitle' => $l->ll_number ? "LL: " . $l->ll_number : "App: " . $l->application_no,
+                    'type' => "LL Registry",
+                    'link' => "/license-registry" // Redirects to LL Table
+                ];
+            }
+
+            // ==========================================
+            // 3. SEARCH DL REGISTRY
+            // ==========================================
+            $dls = Dl::where('user_id', $userId)
+                ->where(function ($q) use ($query) {
+                    $q->where('name', 'like', "%{$query}%")
+                      ->orWhere('mobile_number', 'like', "%{$query}%")
+                      ->orWhere('dl_number', 'like', "%{$query}%");
+                })
+                ->limit(3)
+                ->get();
+
+            foreach ($dls as $d) {
+                $results[] = [
+                    'id' => $d->id,
+                    'title' => $d->name,
+                    'subtitle' => "DL: " . ($d->dl_number ?: 'N/A'),
+                    'type' => "DL Registry",
+                    'link' => "/dl-registry" // Redirects to DL Table
+                ];
+            }
 
             return response()->json($results);
 

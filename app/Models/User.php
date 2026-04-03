@@ -24,8 +24,18 @@ class User extends Authenticatable
         'password',
         'role',
         'is_active',
-        'whatsapp_key', // Added
-        'whatsapp_host' // Added
+        'whatsapp_key',
+        'whatsapp_host',
+        // Settings
+        'days_tax',
+        'days_insurance',
+        'days_fitness',
+        'days_permit',
+        'days_pucc',
+        'days_vltd',
+        'days_speed',
+        'days_ll',
+        'days_dl' // <--- Separate fields
     ];
 
     /**
@@ -47,5 +57,22 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+
+    public function citizens()
+    {
+        return $this->hasMany(Citizen::class);
+    }
+
+    // 2. Indirect: User has many Vehicles (Through Citizens)
+    public function vehicles()
+    {
+        return $this->hasManyThrough(Vehicle::class, Citizen::class);
+    }
+
+    // 3. Direct: User has many LL Entries (Licenses table)
+    public function licenses()
+    {
+        return $this->hasMany(License::class);
+    }
 
 }

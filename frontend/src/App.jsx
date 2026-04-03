@@ -48,7 +48,8 @@ import ExpiryReports from './components/ExpiryReports';
 import BackupPage from './components/BackupPage';
 import QuickEntry from './components/QuickEntry';
 import LicenseFlow from './components/LicenseFlow'; // <--- Import
-
+import DLRegistry from './components/DLRegistry';
+import WhatsAppLogs from './components/WhatsAppLogs';
 
 // --- 1. PRIVATE ROUTE ---
 // If user is NOT logged in, kick them to Login page
@@ -94,6 +95,8 @@ function App() {
         <Route path="/backup" element={<PrivateRoute><BackupPage /></PrivateRoute>} />
         <Route path="/quick-entry" element={<PrivateRoute><QuickEntry /></PrivateRoute>} />
         <Route path="/license-registry" element={<PrivateRoute><LicenseFlow /></PrivateRoute>} />
+        <Route path="/dl-registry" element={<PrivateRoute><DLRegistry /></PrivateRoute>} />
+        <Route path="/whatsapp-logs" element={<PrivateRoute><WhatsAppLogs /></PrivateRoute>} />
 
       </Routes>
     </BrowserRouter>

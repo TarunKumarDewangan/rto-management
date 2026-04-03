@@ -6,8 +6,9 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Services\WhatsAppService;
+use App\Models\User;
 
-// Import Models
+// Models
 use App\Models\Tax;
 use App\Models\Insurance;
 use App\Models\Fitness;
@@ -15,87 +16,137 @@ use App\Models\Permit;
 use App\Models\Pucc;
 use App\Models\SpeedGovernor;
 use App\Models\Vltd;
+use App\Models\License; // LL Flow
+use App\Models\Dl;      // DL Registry
 
 class SendExpiryNotifications extends Command
 {
     protected $signature = 'notifications:send-expiries';
-    protected $description = 'Check expiring documents and send WhatsApp alerts using Agent credentials.';
+    protected $description = 'Send WhatsApp alerts based on per-user settings.';
 
     public function handle(WhatsAppService $whatsAppService): void
     {
-        $this->info('Starting Expiry Check...');
-        Log::info('Scheduler Started: Checking expiries...');
+        $this->info('Starting Dynamic Scheduler...');
 
-        // 1. SETTINGS: Days before expiry to notify (e.g., 15 days)
-        $daysBefore = 15;
-        $targetDate = Carbon::today()->addDays($daysBefore)->toDateString();
+        $users = User::where('is_active', true)
+            ->whereNotNull('whatsapp_key')
+            ->whereNotNull('whatsapp_host')
+            ->get();
 
-        $this->info("Looking for documents expiring on: $targetDate");
+        foreach ($users as $user) {
+            $this->info("Processing Agent: {$user->name}");
 
-        // 2. Check each document type
-        $this->checkDocuments($whatsAppService, Tax::class, 'upto_date', 'Road Tax', $targetDate);
-        $this->checkDocuments($whatsAppService, Insurance::class, 'end_date', 'Insurance', $targetDate);
-        $this->checkDocuments($whatsAppService, Fitness::class, 'valid_until', 'Fitness', $targetDate);
-        $this->checkDocuments($whatsAppService, Permit::class, 'valid_until', 'Permit', $targetDate);
-        $this->checkDocuments($whatsAppService, Pucc::class, 'valid_until', 'PUCC', $targetDate);
-        $this->checkDocuments($whatsAppService, SpeedGovernor::class, 'valid_until', 'Speed Governor', $targetDate);
-        $this->checkDocuments($whatsAppService, Vltd::class, 'valid_until', 'VLTD', $targetDate);
+            // --- A. VEHICLE DOCUMENTS ---
+            $this->checkDoc($whatsAppService, $user, Tax::class, 'days_tax', 'upto_date', 'Road Tax');
+            $this->checkDoc($whatsAppService, $user, Insurance::class, 'days_insurance', 'end_date', 'Insurance');
+            $this->checkDoc($whatsAppService, $user, Fitness::class, 'days_fitness', 'valid_until', 'Fitness');
+            $this->checkDoc($whatsAppService, $user, Permit::class, 'days_permit', 'valid_until', 'Permit');
+            $this->checkDoc($whatsAppService, $user, Pucc::class, 'days_pucc', 'valid_until', 'PUCC');
+            $this->checkDoc($whatsAppService, $user, Vltd::class, 'days_vltd', 'valid_until', 'VLTD');
+            $this->checkDoc($whatsAppService, $user, SpeedGovernor::class, 'days_speed', 'valid_until', 'Speed Governor');
 
-        $this->info('All checks completed.');
-        Log::info('Scheduler Finished.');
+            // --- B. LICENSES ---
+
+            // 1. Driving License (Renew Message)
+            $this->checkDL($whatsAppService, $user);
+
+            // 2. Learning License (New DL Message)
+            $this->checkLL($whatsAppService, $user);
+        }
+
+        $this->info('Done.');
     }
 
-    private function checkDocuments(WhatsAppService $service, $modelClass, $dateCol, $docName, $date)
+    // --- 1. VEHICLE DOCS ---
+    private function checkDoc($service, $user, $model, $daysCol, $dateCol, $docName)
     {
-        // Fetch records expiring on target date
-        // We need to load Vehicle -> Citizen -> User to get the API Key
-        $records = $modelClass::whereDate($dateCol, $date)
-            ->with('vehicle.citizen.user')
+        $days = $user->$daysCol ?? 15;
+        $targetDate = Carbon::today()->addDays($days)->toDateString();
+
+        $records = $model::whereDate($dateCol, $targetDate)
+            ->whereHas('vehicle.citizen', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->with('vehicle.citizen')
             ->get();
 
         foreach ($records as $rec) {
-            $this->processNotification($service, $rec, $docName, $rec->$dateCol);
+            $vehicle = $rec->vehicle;
+            $citizen = $vehicle->citizen;
+            $mobile = '91' . $citizen->mobile_number;
+            $dateStr = Carbon::parse($targetDate)->format('d-m-Y');
+
+            // Message
+            $msg = "प्रिय ग्राहक,\n\n"
+                . "आपके वाहन *{$vehicle->registration_no}* के *{$docName}* की वैधता *{$dateStr}* को समाप्त हो रही है।\n"
+                . "(शेष *{$days}* दिन)\n\n"
+                . "कृपया समय पर नवीनीकरण कराएं।\n\n"
+                . "संपर्क:\n"
+                . "👤 *{$user->name}*\n"
+                . "📱 9876543210"; // Replace with variable if available
+
+            try {
+                $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host);
+            } catch (\Exception $e) {
+                Log::error("Failed vehicle msg: " . $e->getMessage());
+            }
         }
     }
 
-    private function processNotification($service, $record, $docName, $expiryDate)
+    // --- 2. DRIVING LICENSE (Renew) ---
+    private function checkDL($service, $user)
     {
-        // Safety Checks
-        if (!$record->vehicle || !$record->vehicle->citizen || !$record->vehicle->citizen->user) {
-            return;
+        $days = $user->days_dl ?? 60;
+        $targetDate = Carbon::today()->addDays($days)->toDateString();
+
+        $records = Dl::where('user_id', $user->id)->whereDate('valid_upto', $targetDate)->get();
+
+        foreach ($records as $rec) {
+            $mobile = '91' . $rec->mobile_number;
+            $dateStr = Carbon::parse($targetDate)->format('d-m-Y');
+
+            $msg = "प्रिय ग्राहक *{$rec->name}*,\n\n"
+                . "आपका *Driving License (DL)* *{$days}* दिनों में (*{$dateStr}*) समाप्त होने वाला है।\n\n"
+                . "⚠️ DL एक्सपायर होने के बाद गाड़ी चलाना दंडनीय अपराध है।\n\n"
+                . "कृपया नवीनीकरण (Renewal) के लिए संपर्क करें।\n\n"
+                . "संपर्क:\n"
+                . "👤 *{$user->name}*\n"
+                . "📱 9876543210";
+
+            try {
+                $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host);
+            } catch (\Exception $e) {
+                Log::error("Failed DL msg: " . $e->getMessage());
+            }
         }
+    }
 
-        $vehicle = $record->vehicle;
-        $citizen = $vehicle->citizen;
-        $user = $citizen->user; // The Agent (User)
+    // --- 3. LEARNING LICENSE (Apply New) ---
+    private function checkLL($service, $user)
+    {
+        $days = $user->days_ll ?? 30;
+        $targetDate = Carbon::today()->addDays($days)->toDateString();
 
-        // 1. Get Credentials from the User (Agent)
-        $apiKey = $user->whatsapp_key;
-        $apiHost = $user->whatsapp_host;
+        // Check LL Flow Table
+        $records = License::where('user_id', $user->id)->whereDate('ll_valid_upto', $targetDate)->get();
 
-        // 2. Skip if User hasn't configured WhatsApp
-        if (empty($apiKey) || empty($apiHost)) {
-            Log::warning("Skipped {$vehicle->registration_no}: Agent {$user->name} has no API Key.");
-            return;
-        }
+        foreach ($records as $rec) {
+            $mobile = '91' . $rec->mobile_number;
+            $dateStr = Carbon::parse($targetDate)->format('d-m-Y');
 
-        // 3. Prepare Data
-        $regNo = $vehicle->registration_no;
-        $mobile = '91' . $citizen->mobile_number; // Add Country Code
-        $dateStr = Carbon::parse($expiryDate)->format('d-m-Y');
+            $msg = "प्रिय ग्राहक *{$rec->applicant_name}*,\n\n"
+                . "आपका *Learning License (LL)* *{$days}* दिनों में (*{$dateStr}*) समाप्त होने वाला है।\n\n"
+                . "⚠️ *ध्यान दें:* लर्निंग लाइसेंस की अवधि समाप्त होने के बाद इसे रिन्यू नहीं किया जा सकता।\n\n"
+                . "कृपया जल्द से जल्द *'परमानेंट ड्राइविंग लाइसेंस'* (Permanent DL) के लिए आवेदन करें।\n\n"
+                . "संपर्क:\n"
+                . "👤 *{$user->name}*\n"
+                . "📱 9876543210";
 
-        // 4. Construct Message (Hindi + English)
-        $message = "प्रिय ग्राहक,\n\nआपके वाहन {$regNo} के {$docName} की वैधता {$dateStr} को समाप्त हो रही है।\n\nकृपया समय पर नवीनीकरण कराएं और जुर्माने से बचें।\n\nसंपर्क करें:\n{$user->name}";
-
-        // 5. Send Message
-        $this->info("Sending to {$mobile} using {$user->name}'s API...");
-
-        $success = $service->sendTextMessage($mobile, $message, $apiKey, $apiHost);
-
-        if ($success) {
-            $this->info("✅ Sent Successfully.");
-        } else {
-            $this->error("❌ Failed.");
+            try {
+                $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host);
+            } catch (\Exception $e) {
+                Log::error("Failed LL msg: " . $e->getMessage());
+            }
         }
     }
 }

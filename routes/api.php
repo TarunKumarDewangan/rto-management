@@ -108,6 +108,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/licenses/{id}', [App\Http\Controllers\Api\LicenseController::class, 'destroy']);
     Route::post('/licenses/send-whatsapp', [App\Http\Controllers\Api\LicenseController::class, 'sendWhatsApp']);
 
+    Route::get('/dls', [App\Http\Controllers\Api\DlController::class, 'index']);
+    Route::post('/dls', [App\Http\Controllers\Api\DlController::class, 'store']);
+    Route::put('/dls/{id}', [App\Http\Controllers\Api\DlController::class, 'update']);
+    Route::delete('/dls/{id}', [App\Http\Controllers\Api\DlController::class, 'destroy']);
+    Route::get('/whatsapp-logs', [App\Http\Controllers\Api\WhatsAppLogController::class, 'index']);
+
 
 
 
