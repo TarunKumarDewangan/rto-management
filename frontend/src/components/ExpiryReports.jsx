@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 import api from "../api";
 import { Link, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -14,6 +15,12 @@ export default function ExpiryReports() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [sendingIndex, setSendingIndex] = useState(null);
+
+    const contentRef = useRef(null);
+    const handlePrint = useReactToPrint({
+        contentRef,
+        documentTitle: `Expiry_Report_${new Date().toLocaleDateString()}`,
+    });
 
     // --- MODAL STATE ---
     const [activeModal, setActiveModal] = useState(null); // 'Tax', 'Insurance', etc.
@@ -114,12 +121,33 @@ export default function ExpiryReports() {
                                 <div className="col-md-2"><label className="form-label small fw-bold">From</label><input type="date" className="form-control" name="expiry_from" value={filters.expiry_from} onChange={handleFilterChange} /></div>
                                 <div className="col-md-2"><label className="form-label small fw-bold">Upto</label><input type="date" className="form-control" name="expiry_upto" value={filters.expiry_upto} onChange={handleFilterChange} /></div>
                             </div>
-                            <div className="mt-3 d-flex justify-content-end gap-2"><button type="button" className="btn btn-secondary" onClick={handleReset}>Reset</button><button type="submit" className="btn btn-primary">Search</button></div>
+                            <div className="mt-3 d-flex justify-content-end gap-2">
+                                <button type="button" className="btn btn-secondary" onClick={handleReset}>Reset</button>
+                                <button type="submit" className="btn btn-primary px-4 fw-bold">Search</button>
+                                <button type="button" className="btn btn-outline-danger fw-bold" onClick={() => handlePrint()}>
+                                    <i className="bi bi-file-earmark-pdf me-1"></i> Download Report
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
 
-                <div className="card border-0 shadow-sm">
+                <style>{`
+                    @media print {
+                        .navbar, .btn, .pagination, .card-header, form, .modal { display: none !important; }
+                        .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+                        .card { border: 1px solid #eee !important; box-shadow: none !important; }
+                        .table { font-size: 10px !important; }
+                        .badge { border: 1px solid #ccc !important; color: black !important; background: none !important; }
+                        body { background: white !important; }
+                    }
+                `}</style>
+
+                <div className="card border-0 shadow-sm" ref={contentRef}>
+                    <div className="card-header bg-white fw-bold d-none d-print-block text-center py-4">
+                        <h2 className="text-primary m-0">RTO HUB - EXPIRY REPORT</h2>
+                        <p className="text-muted small m-0">Report Generated on {new Date().toLocaleDateString('en-GB')}</p>
+                    </div>
                     <div className="card-body p-0">
                         <div className="table-responsive">
                             <table className="table table-hover mb-0 align-middle">
@@ -133,8 +161,8 @@ export default function ExpiryReports() {
                                             <td className="fw-bold">{r.registration_no}</td>
                                             <td><span className={`badge rounded-pill ${getTypeColor(r.doc_type)}`}>{r.doc_type}</span></td>
                                             <td className={new Date(r.expiry_date) < new Date() ? "text-danger fw-bold" : "text-dark"}>
-                                                {new Date(r.expiry_date).toLocaleDateString('en-GB')}
-                                                {new Date(r.expiry_date) < new Date() && <span className="badge bg-danger ms-2" style={{ fontSize: '0.6rem' }}>EXP</span>}
+                                                <span className="d-block">{new Date(r.expiry_date).toLocaleDateString('en-GB')}</span>
+                                                {new Date(r.expiry_date) < new Date() && <span className="badge bg-danger ms-2 d-print-none" style={{ fontSize: '0.6rem' }}>EXP</span>}
                                             </td>
                                             <td>
                                                 <div className="d-flex gap-2">
