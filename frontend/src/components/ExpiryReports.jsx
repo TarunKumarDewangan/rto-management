@@ -22,6 +22,34 @@ export default function ExpiryReports() {
         documentTitle: `Expiry_Report_${new Date().toLocaleDateString()}`,
     });
 
+    const handleExportExcel = () => {
+        if (!data || !data.records.length) return toast.error("No data to export");
+
+        const headers = ["Owner", "Mobile", "Vehicle", "Doc Type", "Expiry Date"];
+        const rows = data.records.map(r => [
+            r.owner_name,
+            r.mobile_number,
+            r.registration_no,
+            r.doc_type,
+            new Date(r.expiry_date).toLocaleDateString('en-GB')
+        ]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Expiry_Report_${new Date().toLocaleDateString('en-GB')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // --- MODAL STATE ---
     const [activeModal, setActiveModal] = useState(null); // 'Tax', 'Insurance', etc.
     const [editingId, setEditingId] = useState(null);
@@ -125,7 +153,10 @@ export default function ExpiryReports() {
                                 <button type="button" className="btn btn-secondary" onClick={handleReset}>Reset</button>
                                 <button type="submit" className="btn btn-primary px-4 fw-bold">Search</button>
                                 <button type="button" className="btn btn-outline-danger fw-bold" onClick={() => handlePrint()}>
-                                    <i className="bi bi-file-earmark-pdf me-1"></i> Download Report
+                                    <i className="bi bi-file-earmark-pdf me-1"></i> PDF
+                                </button>
+                                <button type="button" className="btn btn-outline-success fw-bold" onClick={handleExportExcel}>
+                                    <i className="bi bi-file-earmark-excel me-1"></i> Excel
                                 </button>
                             </div>
                         </form>
