@@ -23,10 +23,10 @@ export default function ExpiryReports() {
     });
 
     const handleExportExcel = () => {
-        if (!data || !data.records.length) return toast.error("No data to export");
+        if (!data || !data.data || !data.data.length) return toast.error("No data to export");
 
         const headers = ["Owner", "Mobile", "Vehicle", "Doc Type", "Expiry Date"];
-        const rows = data.records.map(r => [
+        const rows = data.data.map(r => [
             r.owner_name,
             r.mobile_number,
             r.registration_no,
