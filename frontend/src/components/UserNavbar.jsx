@@ -34,7 +34,9 @@ export default function UserNavbar() {
         days_vltd: user.days_vltd || 15,
         days_speed: user.days_speed || 15,
         days_ll: user.days_ll || 30, // Separate LL
-        days_dl: user.days_dl || 60   // Separate DL
+        days_dl: user.days_dl || 60,   // Separate DL
+        whatsapp_key: user.whatsapp_key || "",
+        whatsapp_host: user.whatsapp_host || ""
     });
 
     const logout = () => { localStorage.clear(); navigate('/'); };
@@ -73,13 +75,14 @@ export default function UserNavbar() {
     const handleSaveSettings = async (e) => {
         e.preventDefault();
         try {
-            const payload = { ...settingsForm, name: user.name };
-            const res = await api.post('/api/update-profile', payload);
-
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-            setUser(res.data.user);
-
-            toast.success("Settings Saved!");
+            const res = await api.post('/api/user/settings', settingsForm);
+            toast.success("Settings Updated!");
+            
+            // Update local user data
+            const updatedUser = { ...user, ...res.data.user };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            window.dispatchEvent(new Event('storage')); // Notify other components
+            
             setShowSettings(false);
         } catch (error) { toast.error("Failed to save."); }
     };
@@ -163,8 +166,8 @@ export default function UserNavbar() {
                                 {/* Tabs */}
                                 <div className="d-flex border-bottom">
                                     <button className={`btn flex-grow-1 rounded-0 ${activeTab === 'days' ? 'btn-primary' : 'btn-light'}`} onClick={()=>setActiveTab('days')}>Reminder Days</button>
+                                    <button className={`btn flex-grow-1 rounded-0 ${activeTab === 'wa' ? 'btn-primary' : 'btn-light'}`} onClick={()=>setActiveTab('wa')}>WhatsApp API</button>
                                     <button className={`btn flex-grow-1 rounded-0 ${activeTab === 'password' ? 'btn-primary' : 'btn-light'}`} onClick={()=>setActiveTab('password')}>Password</button>
-                                    <button className={`btn flex-grow-1 rounded-0 ${activeTab === 'test' ? 'btn-primary' : 'btn-light'}`} onClick={()=>setActiveTab('test')}>Test API</button>
                                 </div>
 
                                 <div className="p-4">
@@ -187,43 +190,51 @@ export default function UserNavbar() {
                                             </div>
                                             <button className="btn btn-success w-100 mt-3 fw-bold">Save Settings</button>
                                         </form>
-                                    ) : activeTab === 'password' ? (
+                                    ) : activeTab === 'wa' ? (
+                                        <form onSubmit={handleSaveSettings}>
+                                            <div className="mb-3">
+                                                <label className="small fw-bold">WhatsApp API Key</label>
+                                                <input type="text" className="form-control" placeholder="Enter API Key" value={settingsForm.whatsapp_key} onChange={e=>setSettingsForm({...settingsForm, whatsapp_key: e.target.value})} />
+                                            </div>
+                                            <div className="mb-3">
+                                                <label className="small fw-bold">API Host URL</label>
+                                                <input type="text" className="form-control" placeholder="e.g. api.wa-sender.com" value={settingsForm.whatsapp_host} onChange={e=>setSettingsForm({...settingsForm, whatsapp_host: e.target.value})} />
+                                            </div>
+                                            <button className="btn btn-success w-100 fw-bold mb-4">Save API Settings</button>
+
+                                            <hr className="text-muted" />
+                                            <p className="small text-muted mb-2 text-center">Test your connection below</p>
+                                            <div className="mb-3">
+                                                <div className="input-group">
+                                                    <span className="input-group-text bg-light">+91</span>
+                                                    <input type="text" className="form-control" placeholder="Test Mobile No" id="test_mobile" />
+                                                    <button type="button" className="btn btn-primary fw-bold" onClick={async () => {
+                                                        const mobile = document.getElementById('test_mobile').value;
+                                                        if (!mobile || mobile.length !== 10) return toast.error("Enter valid 10 digit number");
+                                                        try {
+                                                            toast.loading("Sending...");
+                                                            await api.post('/api/admin/test-whatsapp', { 
+                                                                mobile, 
+                                                                whatsapp_key: settingsForm.whatsapp_key, 
+                                                                whatsapp_host: settingsForm.whatsapp_host 
+                                                            });
+                                                            toast.dismiss();
+                                                            toast.success("Test Message Sent!");
+                                                        } catch (e) { 
+                                                            toast.dismiss();
+                                                            toast.error(e.response?.data?.message || "Test Failed"); 
+                                                        }
+                                                    }}>Test</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    ) : (
                                         <form onSubmit={handleChangePassword}>
                                             <div className="mb-2"><label className="small">Current</label><input type="password" class="form-control" value={passForm.current_password} onChange={(e) => setPassForm({...passForm, current_password: e.target.value})} /></div>
                                             <div className="mb-2"><label className="small">New</label><input type="password" class="form-control" value={passForm.new_password} onChange={(e) => setPassForm({...passForm, new_password: e.target.value})} /></div>
                                             <div className="mb-3"><label className="small">Confirm</label><input type="password" class="form-control" value={passForm.new_password_confirmation} onChange={(e) => setPassForm({...passForm, new_password_confirmation: e.target.value})} /></div>
                                             <button className="btn btn-primary w-100">Update Password</button>
                                         </form>
-                                    ) : (
-                                        <div>
-                                            <p className="small text-muted mb-3 text-center">Enter your mobile number to test the WhatsApp connection.</p>
-                                            <div className="mb-3">
-                                                <label className="small fw-bold">Mobile Number (10 Digits)</label>
-                                                <div className="input-group">
-                                                    <span className="input-group-text bg-light">+91</span>
-                                                    <input type="text" className="form-control" placeholder="9876543210" id="test_mobile" />
-                                                </div>
-                                            </div>
-                                            <button className="btn btn-primary w-100 fw-bold" onClick={async () => {
-                                                const mobile = document.getElementById('test_mobile').value;
-                                                if (!mobile || mobile.length !== 10) return toast.error("Enter valid 10 digit number");
-                                                try {
-                                                    toast.loading("Sending...");
-                                                    await api.post('/api/admin/test-whatsapp', { 
-                                                        mobile, 
-                                                        whatsapp_key: user.whatsapp_key, 
-                                                        whatsapp_host: user.whatsapp_host 
-                                                    });
-                                                    toast.dismiss();
-                                                    toast.success("Test Message Sent!");
-                                                } catch (e) { 
-                                                    toast.dismiss();
-                                                    toast.error(e.response?.data?.message || "Test Failed"); 
-                                                }
-                                            }}>
-                                                Send Test Message
-                                            </button>
-                                        </div>
                                     )}
                                 </div>
                             </div>

@@ -84,4 +84,30 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Password updated successfully!']);
     }
+
+    public function updateSettings(Request $request)
+    {
+        $user = $request->user();
+        
+        $data = $request->validate([
+            'days_tax' => 'nullable|integer',
+            'days_insurance' => 'nullable|integer',
+            'days_fitness' => 'nullable|integer',
+            'days_permit' => 'nullable|integer',
+            'days_pucc' => 'nullable|integer',
+            'days_vltd' => 'nullable|integer',
+            'days_speed' => 'nullable|integer',
+            'days_ll' => 'nullable|integer',
+            'days_dl' => 'nullable|integer',
+            'whatsapp_key' => 'nullable|string',
+            'whatsapp_host' => 'nullable|string',
+        ]);
+
+        $user->update($data);
+
+        return response()->json([
+            'message' => 'Settings updated successfully!',
+            'user' => $user->fresh()
+        ]);
+    }
 }
