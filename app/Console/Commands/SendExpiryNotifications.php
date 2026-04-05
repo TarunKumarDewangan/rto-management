@@ -82,8 +82,8 @@ class SendExpiryNotifications extends Command
                 . "(शेष *{$days}* दिन)\n\n"
                 . "कृपया समय पर नवीनीकरण कराएं।\n\n"
                 . "संपर्क:\n"
-                . "👤 *{$user->name}*\n"
-                . "📱 9876543210"; // Replace with variable if available
+                . "👤 *{$user->name}*\n";
+
 
             try {
                 $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host);
@@ -110,8 +110,8 @@ class SendExpiryNotifications extends Command
                 . "⚠️ DL एक्सपायर होने के बाद गाड़ी चलाना दंडनीय अपराध है।\n\n"
                 . "कृपया नवीनीकरण (Renewal) के लिए संपर्क करें।\n\n"
                 . "संपर्क:\n"
-                . "👤 *{$user->name}*\n"
-                . "📱 9876543210";
+                . "👤 *{$user->name}*\n";
+
 
             try {
                 $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host);
@@ -139,8 +139,8 @@ class SendExpiryNotifications extends Command
                 . "⚠️ *ध्यान दें:* लर्निंग लाइसेंस की अवधि समाप्त होने के बाद इसे रिन्यू नहीं किया जा सकता।\n\n"
                 . "कृपया जल्द से जल्द *'परमानेंट ड्राइविंग लाइसेंस'* (Permanent DL) के लिए आवेदन करें।\n\n"
                 . "संपर्क:\n"
-                . "👤 *{$user->name}*\n"
-                . "📱 9876543210";
+                . "👤 *{$user->name}*\n";
+
 
             try {
                 $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host);
