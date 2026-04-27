@@ -16,38 +16,73 @@ export default function ExpiryReports() {
     const [loading, setLoading] = useState(false);
     const [sendingIndex, setSendingIndex] = useState(null);
 
-    const contentRef = useRef(null);
+    const printRef = useRef(null);
     const handlePrint = useReactToPrint({
-        contentRef,
+        contentRef: printRef,
         documentTitle: `Expiry_Report_${new Date().toLocaleDateString()}`,
     });
 
-    const handleExportExcel = () => {
-        if (!data || !data.data || !data.data.length) return toast.error("No data to export");
+    const [allDataForExport, setAllDataForExport] = useState([]);
 
-        const headers = ["Owner", "Mobile", "Vehicle", "Doc Type", "Expiry Date"];
-        const rows = data.data.map(r => [
-            r.owner_name,
-            r.mobile_number,
-            r.registration_no,
-            r.doc_type,
-            new Date(r.expiry_date).toLocaleDateString('en-GB')
-        ]);
+    const handleExportExcel = async () => {
+        try {
+            setLoading(true);
+            const params = new URLSearchParams({ ...filters, export: 'all' });
+            for (const [key, value] of params.entries()) { if (!value) params.delete(key); }
+            const res = await api.get(`/api/reports/expiry?${params.toString()}`);
+            
+            const exportData = res.data.data;
+            if (!exportData || !exportData.length) return toast.error("No data to export");
 
-        const csvContent = [
-            headers.join(","),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
-        ].join("\n");
+            const headers = ["Owner", "Mobile", "Vehicle", "Doc Type", "Expiry Date"];
+            const rows = exportData.map(r => [
+                r.owner_name,
+                r.mobile_number,
+                r.registration_no,
+                r.doc_type,
+                new Date(r.expiry_date).toLocaleDateString('en-GB')
+            ]);
 
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Expiry_Report_${new Date().toLocaleDateString('en-GB')}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+            const csvContent = [
+                headers.join(","),
+                ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+            ].join("\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Expiry_Report_${new Date().toLocaleDateString('en-GB')}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            toast.error("Export failed");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExportPDF = async () => {
+        try {
+            setLoading(true);
+            const params = new URLSearchParams({ ...filters, export: 'all' });
+            for (const [key, value] of params.entries()) { if (!value) params.delete(key); }
+            const res = await api.get(`/api/reports/expiry?${params.toString()}`);
+            
+            setAllDataForExport(res.data.data);
+            
+            // Give react a moment to render the hidden table
+            setTimeout(() => {
+                handlePrint();
+                setLoading(false);
+            }, 500);
+
+        } catch (err) {
+            toast.error("PDF Export failed");
+            setLoading(false);
+        }
     };
 
     // --- MODAL STATE ---
@@ -152,7 +187,7 @@ export default function ExpiryReports() {
                             <div className="mt-3 d-flex justify-content-end gap-2">
                                 <button type="button" className="btn btn-secondary" onClick={handleReset}>Reset</button>
                                 <button type="submit" className="btn btn-primary px-4 fw-bold">Search</button>
-                                <button type="button" className="btn btn-outline-danger fw-bold" onClick={() => handlePrint()}>
+                                <button type="button" className="btn btn-outline-danger fw-bold" onClick={handleExportPDF} disabled={loading}>
                                     <i className="bi bi-file-earmark-pdf me-1"></i> PDF
                                 </button>
                                 <button type="button" className="btn btn-outline-success fw-bold" onClick={handleExportExcel}>
@@ -174,7 +209,7 @@ export default function ExpiryReports() {
                     }
                 `}</style>
 
-                <div className="card border-0 shadow-sm" ref={contentRef}>
+                <div className="card border-0 shadow-sm">
                     <div className="card-header bg-white fw-bold d-none d-print-block text-center py-4">
                         <h2 className="text-primary m-0">RTO HUB - EXPIRY REPORT</h2>
                         <p className="text-muted small m-0">Report Generated on {new Date().toLocaleDateString('en-GB')}</p>
@@ -284,6 +319,38 @@ export default function ExpiryReports() {
                     </div>
                 </div>
             )}
+
+            {/* --- HIDDEN PRINT SECTION --- */}
+            <div className="d-none">
+                <div ref={printRef} className="p-4">
+                    <div className="text-center mb-4">
+                        <h2 className="text-primary fw-bold">RTO HUB - EXPIRY REPORT</h2>
+                        <p className="text-muted">Report Generated on {new Date().toLocaleDateString('en-GB')}</p>
+                    </div>
+                    <table className="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Owner</th>
+                                <th>Mobile</th>
+                                <th>Vehicle</th>
+                                <th>Type</th>
+                                <th>Expiry Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {allDataForExport.map((r, i) => (
+                                <tr key={i}>
+                                    <td>{r.owner_name}</td>
+                                    <td>{r.mobile_number}</td>
+                                    <td>{r.registration_no}</td>
+                                    <td>{r.doc_type}</td>
+                                    <td>{new Date(r.expiry_date).toLocaleDateString('en-GB')}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 }

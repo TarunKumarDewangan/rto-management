@@ -8,13 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('whatsapp_logs', function (Blueprint $结构) {
-            $结构->id();
-            $结构->string('mobile');
-            $结构->text('message');
-            $结构->boolean('status')->default(false);
-            $结构->text('response_body')->nullable();
-            $结构->timestamps();
+        Schema::create('whatsapp_logs', function (Blueprint $table) {
+            $table->id();
+            $table->string('mobile');
+            $table->text('message');
+            $table->boolean('status')->default(false);
+            $table->text('response_body')->nullable();
+            $table->timestamps();
         });
     }
 

@@ -80,6 +80,14 @@ class ExpiryReportController extends Controller
             $result->whereDate('expiry_date', '<=', $dateUpto);
 
         $result->orderBy('expiry_date', 'asc');
+        
+        // Handle Export All
+        if ($request->export === 'all') {
+            return response()->json([
+                'data' => $result->get(),
+                'total' => $result->count()
+            ]);
+        }
 
         return response()->json($result->paginate(15));
 
