@@ -1,0 +1,46 @@
+# name: Local AI Config
+# version: 1.0.0
+# schema: v1
+
+# models:
+#   - name: Qwen Coder
+#     provider: ollama
+#     model: qwen2.5-coder:7b
+#     apiBase: http://127.0.0.1:11434
+
+#   - name: Gemma 4
+#     provider: ollama
+#     model: gemma4:e4b
+#     apiBase: http://127.0.0.1:11434
+
+# defaultModel: Qwen Coder
+
+name: Local AI Pro
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Qwen Coder
+    provider: ollama
+    model: qwen2.5-coder:7b
+    apiBase: http://127.0.0.1:11434
+
+  - name: Gemma 4
+    provider: ollama
+    model: gemma4:e4b
+    apiBase: http://127.0.0.1:11434
+
+defaultModel: Qwen Coder
+
+context:
+  - provider: codebase
+  - provider: docs
+  - provider: diff
+
+systemMessage: |
+  You are a senior Laravel + React developer.
+  You write clean, production-ready code.
+  You can edit files, fix bugs, and create APIs.
+
+autocomplete:
+  model: Gemma 4
