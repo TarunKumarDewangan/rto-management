@@ -8,7 +8,7 @@ use App\Models\WhatsAppLog;
 
 class WhatsAppService
 {
-    public function sendTextMessage($mobile, $message, $apiKey, $apiHost)
+    public function sendTextMessage($mobile, $message, $apiKey, $apiHost, $userId = null)
     {
         // 1. Prepare Data
         $cleanHost = preg_replace('#^https?://#', '', rtrim($apiHost, '/'));
@@ -44,6 +44,7 @@ class WhatsAppService
             // 3. Save Log
             try {
                 WhatsAppLog::create([
+                    'user_id' => $userId,
                     'mobile' => $mobile,
                     'message' => $message,
                     'status' => $status,

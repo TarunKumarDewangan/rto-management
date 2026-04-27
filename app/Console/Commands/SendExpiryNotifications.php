@@ -86,7 +86,7 @@ class SendExpiryNotifications extends Command
 
 
             try {
-                $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host);
+                $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host, $user->id);
             } catch (\Exception $e) {
                 Log::error("Failed vehicle msg: " . $e->getMessage());
             }
@@ -114,7 +114,7 @@ class SendExpiryNotifications extends Command
 
 
             try {
-                $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host);
+                $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host, $user->id);
             } catch (\Exception $e) {
                 Log::error("Failed DL msg: " . $e->getMessage());
             }
@@ -143,7 +143,7 @@ class SendExpiryNotifications extends Command
 
 
             try {
-                $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host);
+                $service->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host, $user->id);
             } catch (\Exception $e) {
                 Log::error("Failed LL msg: " . $e->getMessage());
             }

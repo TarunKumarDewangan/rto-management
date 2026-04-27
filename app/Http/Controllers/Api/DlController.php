@@ -74,7 +74,7 @@ class DlController extends Controller
 
     public function update(Request $request, $id)
     {
-        $dl = Dl::findOrFail($id);
+        $dl = Dl::where('user_id', $request->user()->id)->findOrFail($id);
 
         $data = $request->all();
         $data['name'] = strtoupper($request->name);
@@ -87,9 +87,9 @@ class DlController extends Controller
         return response()->json(['message' => 'DL Updated']);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        Dl::findOrFail($id)->delete();
+        Dl::where('user_id', $request->user()->id)->findOrFail($id)->delete();
         return response()->json(['message' => 'Deleted']);
     }
 }

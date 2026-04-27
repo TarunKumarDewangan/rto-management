@@ -96,7 +96,11 @@ class ExpiryReportController extends Controller
         ]);
 
         // 1. Get Citizen and their Agent (User)
-        $citizen = Citizen::with('user')->findOrFail($request->citizen_id);
+        $citizen = Citizen::where('id', $request->citizen_id)
+            ->where('user_id', $request->user()->id)
+            ->with('user')
+            ->firstOrFail();
+
         $user = $citizen->user; // The Agent
 
         // 2. Check Credentials
@@ -116,7 +120,8 @@ class ExpiryReportController extends Controller
                 $mobile,
                 $message,
                 $user->whatsapp_key,
-                $user->whatsapp_host
+                $user->whatsapp_host,
+                $user->id
             );
             return response()->json(['message' => 'Message Sent Successfully!']);
         } catch (\Exception $e) {

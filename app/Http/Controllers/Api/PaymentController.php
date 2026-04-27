@@ -12,11 +12,28 @@ class PaymentController extends Controller
 {
     public function store(Request $request)
     {
-        // Note: Security here relies on the frontend passing a valid ID,
-        // but strictly we should check if the tax/ins/etc belongs to user.
-        // For brevity, assuming the UI is secure enough for 'add', but 'edit/delete' needs strictness.
+        // Validate Ownership before creating
+        $checkRelation = function($relationId, $modelClass) use ($request) {
+            if (!$relationId) return true;
+            return \Illuminate\Support\Facades\DB::table((new $modelClass)->getTable())
+                ->join('vehicles', 'vehicles.id', '=', (new $modelClass)->getTable() . '.vehicle_id')
+                ->join('citizens', 'citizens.id', '=', 'vehicles.citizen_id')
+                ->where((new $modelClass)->getTable() . '.id', $relationId)
+                ->where('citizens.user_id', $request->user()->id)
+                ->exists();
+        };
 
-        $request->validate(['amount' => 'required|numeric', 'payment_date' => 'required|date']);
+        $valid = $checkRelation($request->tax_id, \App\Models\Tax::class) &&
+                 $checkRelation($request->insurance_id, \App\Models\Insurance::class) &&
+                 $checkRelation($request->pucc_id, \App\Models\Pucc::class) &&
+                 $checkRelation($request->fitness_id, \App\Models\Fitness::class) &&
+                 $checkRelation($request->vltd_id, \App\Models\Vltd::class) &&
+                 $checkRelation($request->permit_id, \App\Models\Permit::class) &&
+                 $checkRelation($request->speed_governor_id, \App\Models\SpeedGovernor::class);
+
+        if (!$valid) {
+            return response()->json(['message' => 'Unauthorized action.'], 403);
+        }
 
         Payment::create([
             'tax_id' => $request->tax_id ?? null,
@@ -36,10 +53,27 @@ class PaymentController extends Controller
 
     public function update(Request $request, $id)
     {
-        $payment = Payment::findOrFail($id);
-        // Ideally, perform a check here to ensure payment belongs to auth user via relationships
-        // But for this scale, basic findOrFail is often acceptable if IDs aren't guessed.
-        // A robust check would join back to citizen table.
+        $payment = Payment::with([
+            'tax.vehicle.citizen',
+            'insurance.vehicle.citizen',
+            'pucc.vehicle.citizen',
+            'fitness.vehicle.citizen',
+            'vltd.vehicle.citizen',
+            'permit.vehicle.citizen',
+            'speedGovernor.vehicle.citizen'
+        ])->findOrFail($id);
+
+        $checkOwner = function ($relation) use ($payment, $request) {
+            return $payment->$relation && $payment->$relation->vehicle->citizen->user_id === $request->user()->id;
+        };
+
+        $isOwner = $checkOwner('tax') || $checkOwner('insurance') || $checkOwner('pucc') ||
+                   $checkOwner('fitness') || $checkOwner('vltd') ||
+                   $checkOwner('permit') || $checkOwner('speedGovernor');
+
+        if (!$isOwner) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $payment->update([
             'amount' => $request->amount,

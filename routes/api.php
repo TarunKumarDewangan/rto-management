@@ -139,7 +139,8 @@ Route::middleware('auth:sanctum')->group(function () {
                 $mobile,
                 $message,
                 $request->whatsapp_key,
-                $request->whatsapp_host
+                $request->whatsapp_host,
+                $request->user()->id
             );
 
             return response()->json(['message' => 'Message sent successfully!']);

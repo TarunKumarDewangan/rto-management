@@ -114,7 +114,7 @@ class LicenseController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $license = License::findOrFail($id);
+            $license = License::where('user_id', $request->user()->id)->findOrFail($id);
 
             $data = $request->all();
 
@@ -146,10 +146,10 @@ class LicenseController extends Controller
     }
 
     // 4. DELETE ENTRY
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
-            $license = License::findOrFail($id);
+            $license = License::where('user_id', $request->user()->id)->findOrFail($id);
             $license->delete();
             return response()->json(['message' => 'Deleted Successfully']);
         } catch (\Exception $e) {
@@ -161,7 +161,7 @@ class LicenseController extends Controller
     public function sendWhatsApp(Request $request, WhatsAppService $whatsapp)
     {
         try {
-            $rec = License::findOrFail($request->id);
+            $rec = License::where('user_id', $request->user()->id)->findOrFail($request->id);
             $user = $request->user();
 
             if (empty($user->whatsapp_key) || empty($user->whatsapp_host)) {
@@ -178,7 +178,7 @@ class LicenseController extends Controller
                 $msg = "Hello {$rec->applicant_name},\n\nYour Learning License (LL No: {$rec->ll_number}) is valid until {$expiry}.\n\nRegard,\n{$user->name}";
             }
 
-            $whatsapp->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host);
+            $whatsapp->sendTextMessage($mobile, $msg, $user->whatsapp_key, $user->whatsapp_host, $user->id);
             return response()->json(['message' => 'Message Sent!']);
 
         } catch (\Exception $e) {

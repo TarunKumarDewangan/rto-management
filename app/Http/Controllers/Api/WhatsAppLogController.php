@@ -9,9 +9,10 @@ use Carbon\Carbon;
 
 class WhatsAppLogController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $logs = WhatsAppLog::whereDate('created_at', Carbon::today())
+        $logs = WhatsAppLog::where('user_id', $request->user()->id)
+            ->whereDate('created_at', Carbon::today())
             ->orderBy('created_at', 'desc')
             ->get();
 

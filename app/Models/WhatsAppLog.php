@@ -12,6 +12,7 @@ class WhatsAppLog extends Model
     protected $table = 'whatsapp_logs';
 
     protected $fillable = [
+        'user_id',
         'mobile',
         'message',
         'status',
