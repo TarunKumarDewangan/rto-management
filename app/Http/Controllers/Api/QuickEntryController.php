@@ -9,6 +9,7 @@ use App\Models\Citizen;
 use App\Models\Vehicle;
 use App\Models\Pucc;
 use App\Models\Insurance; // <--- Import Insurance
+use App\Models\Permit;
 
 class QuickEntryController extends Controller
 {
@@ -19,7 +20,7 @@ class QuickEntryController extends Controller
             'mobile_number' => 'required',
             'registration_no' => 'required',
             'valid_until' => 'required|date',
-            'mode' => 'required|in:PUCC,INSURANCE' // <--- Validate Mode
+            'mode' => 'required|in:PUCC,INSURANCE,PERMIT' // <--- Validate Mode
         ]);
 
         $ownerId = $request->user()->id;
@@ -70,6 +71,16 @@ class QuickEntryController extends Controller
                     'end_date' => $request->valid_until,   // Mapped to end_date
                     'company' => $request->company,
                     'policy_number' => $request->policy_number,
+                    'bill_amount' => 0,
+                    'actual_amount' => 0
+                ]);
+            } elseif ($request->mode === 'PERMIT') {
+                Permit::create([
+                    'vehicle_id' => $vehicle->id,
+                    'valid_from' => $request->valid_from,
+                    'valid_until' => $request->valid_until,
+                    'permit_number' => $request->permit_number,
+                    'permit_type' => $request->permit_type,
                     'bill_amount' => 0,
                     'actual_amount' => 0
                 ]);

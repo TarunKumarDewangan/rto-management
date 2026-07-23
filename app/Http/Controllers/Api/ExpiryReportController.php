@@ -24,6 +24,7 @@ class ExpiryReportController extends Controller
         $docType = $request->doc_type;
         $dateFrom = $request->expiry_from;
         $dateUpto = $request->expiry_upto;
+        $expiredOnly = $request->boolean('expired_only');
 
         $buildQuery = function ($table, $typeLabel, $dateCol) use ($userId) {
             return DB::table($table)
@@ -74,6 +75,8 @@ class ExpiryReportController extends Controller
             $result->where('owner_name', 'like', "%$name%");
         if ($vehicleNo)
             $result->where('registration_no', 'like', "%$vehicleNo%");
+        if ($expiredOnly)
+            $result->whereDate('expiry_date', '<', Carbon::today());
         if ($dateFrom)
             $result->whereDate('expiry_date', '>=', $dateFrom);
         if ($dateUpto)

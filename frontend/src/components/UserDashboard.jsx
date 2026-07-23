@@ -161,6 +161,8 @@ export default function UserDashboard() {
     const [stats, setStats] = useState({
         total_citizens: 0, total_vehicles: 0, collected_today: 0, expiring_soon: 0
     });
+    const [expiredDocs, setExpiredDocs] = useState([]);
+    const [expiredLoading, setExpiredLoading] = useState(true);
     const user = JSON.parse(localStorage.getItem('user'));
 
     useEffect(() => {
@@ -173,10 +175,33 @@ export default function UserDashboard() {
             }
         };
         fetchStats();
+
+        const fetchExpired = async () => {
+            try {
+                const res = await api.get('/api/reports/expiry?expired_only=1&export=all');
+                setExpiredDocs(res.data.data || []);
+            } catch (error) {
+                console.error("Error fetching expired documents", error);
+            } finally {
+                setExpiredLoading(false);
+            }
+        };
+        fetchExpired();
     }, []);
 
-    const StatCard = ({ icon, color, subColor, title, value, textColor }) => (
-        <div className="col-6 col-md-3">
+    const getTypeColor = (type) => {
+        switch (type) {
+            case 'Tax': return 'bg-secondary';
+            case 'Insurance': return 'bg-primary';
+            case 'Fitness': return 'bg-info text-dark';
+            case 'PUCC': return 'bg-success';
+            case 'Permit': return 'bg-warning text-dark';
+            default: return 'bg-dark';
+        }
+    };
+
+    const StatCard = ({ icon, color, subColor, title, value, textColor, to }) => {
+        const content = (
             <div className="card border-0 shadow-sm h-100">
                 <div className="card-body p-3 d-flex flex-column flex-lg-row align-items-center justify-content-center text-center text-lg-start gap-3">
                     <div className={`rounded-circle d-flex align-items-center justify-content-center ${subColor}`} style={{ width: '45px', height: '45px', minWidth: '45px' }}>
@@ -188,8 +213,19 @@ export default function UserDashboard() {
                     </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+        return (
+            <div className="col-6 col-md-3">
+                {to ? <Link to={to} className="text-decoration-none">{content}</Link> : content}
+            </div>
+        );
+    };
+
+    const toDateInput = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const today = new Date();
+    const next15Days = new Date();
+    next15Days.setDate(today.getDate() + 15);
+    const expiringSoonLink = `/reports/expiry?expiry_from=${toDateInput(today)}&expiry_upto=${toDateInput(next15Days)}`;
 
     return (
         <div className="bg-light min-vh-100">
@@ -201,7 +237,7 @@ export default function UserDashboard() {
                 </div>
 
                 <div className="row g-3 mb-4">
-                    <StatCard icon="bi-exclamation-triangle-fill" color="text-warning" subColor="bg-warning-subtle" textColor="text-warning" title="Expiring (15 Days)" value={stats.expiring_soon} />
+                    <StatCard icon="bi-exclamation-triangle-fill" color="text-warning" subColor="bg-warning-subtle" textColor="text-warning" title="Expiring (15 Days)" value={stats.expiring_soon} to={expiringSoonLink} />
                     <StatCard icon="bi-currency-rupee" color="text-success" subColor="bg-success-subtle" textColor="text-success" title="Collected Today" value={`₹${Number(stats.collected_today).toLocaleString()}`} />
                     <StatCard icon="bi-people-fill" color="text-primary" subColor="bg-primary-subtle" textColor="text-dark" title="Total Citizens" value={stats.total_citizens} />
                     <StatCard icon="bi-truck" color="text-secondary" subColor="bg-secondary-subtle" textColor="text-dark" title="Total Vehicles" value={stats.total_vehicles} />
@@ -212,6 +248,49 @@ export default function UserDashboard() {
                     <div className="col-12 col-md-4"><div className="card border-0 shadow-sm h-100 p-4 text-center"><div className="mb-3"><i className="bi bi-people-fill fs-1 text-primary d-block"></i></div><h5 className="card-title fw-bold">Manage Citizens</h5><p className="card-text text-muted small mb-4">Add new customers or update details.</p><div className="d-grid gap-2 mt-auto"><Link to="/create-citizen" className="btn btn-primary fw-bold">+ New Citizen</Link><Link to="/citizens" className="btn btn-outline-primary fw-bold">View All</Link></div></div></div>
                     <div className="col-12 col-md-4"><div className="card border-0 shadow-sm h-100 p-4 text-center"><div className="mb-3"><i className="bi bi-exclamation-triangle-fill fs-1 text-success d-block"></i></div><h5 className="card-title fw-bold">Expiry Reports</h5><p className="card-text text-muted small mb-4">Track documents expiring soon.</p><Link to="/reports/expiry" className="btn btn-success w-100 mt-auto fw-bold">View Reports</Link></div></div>
                     <div className="col-12 col-md-4"><div className="card border-0 shadow-sm h-100 p-4 text-center"><div className="mb-3"><i className="bi bi-floppy-fill fs-1 text-secondary d-block"></i></div><h5 className="card-title fw-bold">Data Backup</h5><p className="card-text text-muted small mb-4">Download database backup.</p><Link to="/backup" className="btn btn-secondary w-100 mt-auto fw-bold">Go to Backup</Link></div></div>
+                </div>
+
+                <div className="card border-0 shadow-sm mt-4">
+                    <div className="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span className="fw-bold text-danger"><i className="bi bi-exclamation-octagon-fill me-2"></i>Expired Documents</span>
+                        <Link to="/reports/expiry?expired_only=1" className="btn btn-sm btn-outline-danger fw-bold">View All</Link>
+                    </div>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                        <table className="table table-hover mb-0">
+                            <thead className="table-light" style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                                <tr>
+                                    <th>Owner</th>
+                                    <th>Mobile</th>
+                                    <th>Vehicle</th>
+                                    <th>Type</th>
+                                    <th>Expired On</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {expiredLoading ? (
+                                    <tr><td colSpan="5" className="text-center text-muted py-4">Loading...</td></tr>
+                                ) : expiredDocs.length === 0 ? (
+                                    <tr><td colSpan="5" className="text-center text-muted py-4">No expired documents. 🎉</td></tr>
+                                ) : (
+                                    expiredDocs.map((r, idx) => (
+                                        <tr key={idx}>
+                                            <td>
+                                                <Link to={`/citizens/${r.citizen_id}`} className="text-decoration-none fw-bold">
+                                                    {r.owner_name}
+                                                </Link>
+                                            </td>
+                                            <td>{r.mobile_number}</td>
+                                            <td className="fw-bold">{r.registration_no}</td>
+                                            <td><span className={`badge ${getTypeColor(r.doc_type)}`}>{r.doc_type}</span></td>
+                                            <td className="text-danger fw-bold">
+                                                {new Date(r.expiry_date).toLocaleDateString('en-GB')}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

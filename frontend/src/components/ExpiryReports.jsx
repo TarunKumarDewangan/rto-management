@@ -8,9 +8,12 @@ import UserNavbar from "./UserNavbar";
 export default function ExpiryReports() {
     const [searchParams] = useSearchParams();
     const urlCitizenId = searchParams.get("citizen_id") || "";
+    const urlExpiryFrom = searchParams.get("expiry_from") || "";
+    const urlExpiryUpto = searchParams.get("expiry_upto") || "";
+    const urlExpiredOnly = searchParams.get("expired_only") || "";
 
     const [filters, setFilters] = useState({
-        owner_name: '', vehicle_no: '', doc_type: '', expiry_from: '', expiry_upto: '', citizen_id: urlCitizenId
+        owner_name: '', vehicle_no: '', doc_type: '', expiry_from: urlExpiryFrom, expiry_upto: urlExpiryUpto, citizen_id: urlCitizenId, expired_only: urlExpiredOnly
     });
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -113,10 +116,10 @@ export default function ExpiryReports() {
     const taxModes = ["MTT", "QTT", "HYT", "YTT", "LTT"];
     const insTypes = ["1st Party", "3rd Party"];
 
-    const fetchReport = async (pageNo = 1) => {
+    const fetchReport = async (pageNo = 1, filterOverride = null) => {
         setLoading(true);
         try {
-            const params = new URLSearchParams({ ...filters, page: pageNo });
+            const params = new URLSearchParams({ ...(filterOverride || filters), page: pageNo });
             for (const [key, value] of params.entries()) { if (!value) params.delete(key); }
             const res = await api.get(`/api/reports/expiry?${params.toString()}`);
             setData(res.data);
@@ -124,7 +127,7 @@ export default function ExpiryReports() {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchReport(1); }, [urlCitizenId]);
+    useEffect(() => { fetchReport(1); }, [urlCitizenId, urlExpiryFrom, urlExpiryUpto, urlExpiredOnly]);
 
     // --- OPEN MODAL HANDLER ---
     const handleOpenEdit = (record) => {
@@ -156,7 +159,12 @@ export default function ExpiryReports() {
 
     const handleFilterChange = (e) => setFilters({ ...filters, [e.target.name]: e.target.value });
     const handleSearch = (e) => { e.preventDefault(); fetchReport(1); };
-    const handleReset = () => { setFilters({ owner_name: '', vehicle_no: '', doc_type: '', expiry_from: '', expiry_upto: '', citizen_id: '' }); };
+    const handleReset = () => { setFilters({ owner_name: '', vehicle_no: '', doc_type: '', expiry_from: '', expiry_upto: '', citizen_id: '', expired_only: '' }); };
+    const handleToggleExpiredOnly = (e) => {
+        const next = { ...filters, expired_only: e.target.checked ? '1' : '' };
+        setFilters(next);
+        fetchReport(1, next);
+    };
     const handleSendMsg = async (record, index) => {
         setSendingIndex(index);
         try {
@@ -183,6 +191,21 @@ export default function ExpiryReports() {
                                 <div className="col-md-2"><label className="form-label small fw-bold">Doc Type</label><select className="form-select" name="doc_type" value={filters.doc_type} onChange={handleFilterChange}><option value="">All Types</option><option value="Tax">Tax</option><option value="Insurance">Insurance</option><option value="Fitness">Fitness</option><option value="Permit">Permit</option><option value="PUCC">PUCC</option><option value="Speed Gov">Speed Gov</option><option value="VLTD">VLTD</option></select></div>
                                 <div className="col-md-2"><label className="form-label small fw-bold">From</label><input type="date" className="form-control" name="expiry_from" value={filters.expiry_from} onChange={handleFilterChange} /></div>
                                 <div className="col-md-2"><label className="form-label small fw-bold">Upto</label><input type="date" className="form-control" name="expiry_upto" value={filters.expiry_upto} onChange={handleFilterChange} /></div>
+                            </div>
+                            <div className="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div className="form-check form-switch">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        id="expiredOnlySwitch"
+                                        checked={filters.expired_only === '1'}
+                                        onChange={handleToggleExpiredOnly}
+                                    />
+                                    <label className="form-check-label fw-bold text-danger" htmlFor="expiredOnlySwitch">
+                                        Show Expired Only (oldest first)
+                                    </label>
+                                </div>
                             </div>
                             <div className="mt-3 d-flex justify-content-end gap-2">
                                 <button type="button" className="btn btn-secondary" onClick={handleReset}>Reset</button>
