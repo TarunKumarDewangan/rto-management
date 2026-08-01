@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/citizens/{id}/statement', [App\Http\Controllers\Api\AccountController::class, 'statement']);
     Route::get('/reports/expiry', [App\Http\Controllers\Api\ExpiryReportController::class, 'index']);
+    Route::get('/birthdays', [App\Http\Controllers\Api\BirthdayController::class, 'index']);
     Route::get('/export/backup', [BackupController::class, 'export']);
     Route::get('/backup/get-link', [BackupController::class, 'getDownloadLink']);
 
@@ -114,6 +115,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/dls/{id}', [App\Http\Controllers\Api\DlController::class, 'update']);
     Route::delete('/dls/{id}', [App\Http\Controllers\Api\DlController::class, 'destroy']);
     Route::get('/whatsapp-logs', [App\Http\Controllers\Api\WhatsAppLogController::class, 'index']);
+
+    Route::get('/festivals', [App\Http\Controllers\Api\FestivalController::class, 'index']);
+    Route::post('/festivals', [App\Http\Controllers\Api\FestivalController::class, 'store']);
+    Route::put('/festivals/{id}', [App\Http\Controllers\Api\FestivalController::class, 'update']);
+    Route::delete('/festivals/{id}', [App\Http\Controllers\Api\FestivalController::class, 'destroy']);
 
 
 

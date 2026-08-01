@@ -114,6 +114,8 @@ export default function UserNavbar() {
                             <li className="nav-item"><Link className={`nav-link ${isActive('/license-registry')}`} to="/license-registry">LL/DL</Link></li>
                             <li className="nav-item"><Link className={`nav-link ${isActive('/dl-registry')}`} to="/dl-registry">DL Registry</Link></li>
                             <li className="nav-item"><Link className={`nav-link ${isActive('/whatsapp-logs')}`} to="/whatsapp-logs">WA Logs</Link></li>
+                            <li className="nav-item"><Link className={`nav-link ${isActive('/birthdays')}`} to="/birthdays">Birthdays</Link></li>
+                            <li className="nav-item"><Link className={`nav-link ${isActive('/festivals')}`} to="/festivals">Festivals</Link></li>
                         </ul>
 
                         {/* Search Bar */}

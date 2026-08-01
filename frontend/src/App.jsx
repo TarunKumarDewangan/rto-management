@@ -47,6 +47,8 @@ import AccountStatement from './components/AccountStatement';
 import ExpiryReports from './components/ExpiryReports';
 import BackupPage from './components/BackupPage';
 import QuickEntry from './components/QuickEntry';
+import Birthdays from './components/Birthdays';
+import Festivals from './components/Festivals';
 import LicenseFlow from './components/LicenseFlow'; // <--- Import
 import DLRegistry from './components/DLRegistry';
 import WhatsAppLogs from './components/WhatsAppLogs';
@@ -94,6 +96,8 @@ function App() {
         <Route path="/reports/expiry" element={<PrivateRoute><ExpiryReports /></PrivateRoute>} />
         <Route path="/backup" element={<PrivateRoute><BackupPage /></PrivateRoute>} />
         <Route path="/quick-entry" element={<PrivateRoute><QuickEntry /></PrivateRoute>} />
+        <Route path="/birthdays" element={<PrivateRoute><Birthdays /></PrivateRoute>} />
+        <Route path="/festivals" element={<PrivateRoute><Festivals /></PrivateRoute>} />
         <Route path="/license-registry" element={<PrivateRoute><LicenseFlow /></PrivateRoute>} />
         <Route path="/dl-registry" element={<PrivateRoute><DLRegistry /></PrivateRoute>} />
         <Route path="/whatsapp-logs" element={<PrivateRoute><WhatsAppLogs /></PrivateRoute>} />
