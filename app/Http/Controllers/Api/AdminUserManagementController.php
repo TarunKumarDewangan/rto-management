@@ -89,6 +89,11 @@ class AdminUserManagementController extends Controller
         $user = User::findOrFail($id);
         $user->is_active = !$user->is_active;
         $user->save();
+
+        if (!$user->is_active) {
+            $user->tokens()->delete();
+        }
+
         return response()->json(['message' => 'User Status Updated']);
     }
 

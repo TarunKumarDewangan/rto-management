@@ -24,6 +24,11 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->firstOrFail();
 
+        if (!$user->is_active) {
+            Auth::logout();
+            return response()->json(['message' => 'Your account has been deactivated. Please contact the administrator.'], 403);
+        }
+
         // Create Sanctum Token
         $token = $user->createToken('auth_token')->plainTextToken;
 

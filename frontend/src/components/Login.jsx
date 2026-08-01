@@ -29,7 +29,7 @@ export default function Login() {
 
         } catch (err) {
             console.error(err);
-            toast.error('Invalid email or password.');
+            toast.error(err.response?.data?.message || 'Invalid email or password.');
         } finally {
             setIsLoading(false);
         }
